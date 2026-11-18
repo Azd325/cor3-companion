@@ -1,4 +1,4 @@
-# COR3 Helper
+# <img src="icons/icon-128.png" alt="" width="40" align="center"> COR3 Helper
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/nvanderwaal)
 
@@ -9,6 +9,12 @@ Browser extension for cor3.gg:
   plus an access mark after the server names on the market's job cards.
 - **Expeditions**: makes the risk/rewards popup on decision options clear (higher/lower, more/less
   and a one-line verdict), and shows the exact risk score of a mission.
+- **Loadout & market**: shows what a program or hardware part would do to your setup, on the
+  loadout page and on the market's cards, and stars the best upgrade (Alt+L toggles).
+
+Click the extension's icon in the toolbar for a list of the helpers and their shortcuts.
+
+<img src="docs/menu.png" alt="Toolbar menu listing the four helpers and their shortcuts" width="300">
 
 It only reads what the game already sends to your browser; it never sends anything itself.
 
@@ -127,3 +133,28 @@ https://addons.mozilla.org/developers/addon/api/key/
    The signed `.xpi` lands in `web-ext-artifacts/`.
 
 Use the GitHub release instead where you can: a version signed locally can't be released by the workflow.
+
+## Loadout & market
+
+The helper reads your loadout when you open the Loadout page, so open it once before you shop.
+It adds a short block to these cards:
+
+- **Programs you haven't installed**: whether the program fits next to the installed ones. If it
+  doesn't, whether it fits in place of an installed program with the same ability (HACK, DECRYPT, ...).
+  It also shows your best power per ability before and after, and what the program would take from the
+  programs that are already running. If it fits nowhere, it lists the resources you're short, e.g.
+  `CPU Freq 16.2/12.7 GHz`.
+- **Installed programs**: what each resource needs to reach max power, with the one holding it back
+  most (the game's yellow bar) first.
+- **Hardware "Change" list**: whether your setup still boots (PSU draw against PSU power) and
+  how each installed program's power changes.
+- **Market hardware**: the same, plus how the specs compare to the part you have now.
+- **Market software**: the same as programs you haven't installed, plus a note if you already own it.
+
+**★** marks the best upgrade among the cards on screen: per hardware category, and per ability for
+software. Only parts that boot and programs that fit can get it.
+
+The game works out program power on its server, so power for a setup you don't have yet is an
+estimate (marked ≈). For programs that are installed, the helper starts from the game's real number
+and only estimates the change.
+

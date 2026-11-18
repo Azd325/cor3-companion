@@ -12,7 +12,10 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const dist = join(root, "dist");
-const FILES = ["jobs.js", "solver.js", "expeditions.js"];
+const FILES = [
+  "jobs.js", "loadout.js", "solver.js", "expeditions.js", "popup.html", "popup.js",
+  "icons/icon-16.png", "icons/icon-32.png", "icons/icon-48.png", "icons/icon-128.png",
+];
 const base = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8"));
 
 // FIREFOX_UPDATE_URL (set by the GitHub release workflow) lets installed
@@ -78,7 +81,10 @@ for (const [name, manifest] of Object.entries(targets)) {
   mkdirSync(dir, { recursive: true });
   const manifestBuf = Buffer.from(JSON.stringify(manifest, null, 2) + "\n");
   writeFileSync(join(dir, "manifest.json"), manifestBuf);
-  for (const f of FILES) copyFileSync(join(root, f), join(dir, f));
+  for (const f of FILES) {
+    mkdirSync(dirname(join(dir, f)), { recursive: true });
+    copyFileSync(join(root, f), join(dir, f));
+  }
   const entries = [
     { name: "manifest.json", data: manifestBuf },
     ...FILES.map((f) => ({ name: f, data: readFileSync(join(root, f)) })),

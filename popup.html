@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>COR3 Helper</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; width: 300px; background: #08121a; color: #cfe7ee;
+         font: 12px/1.45 ui-monospace, Consolas, monospace; }
+  header { display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+           background: #10222b; border-bottom: 1px solid #2d4a55; }
+  header img { width: 24px; height: 24px; }
+  header b { flex: 1; color: #76c1d1; letter-spacing: .05em; font-size: 13px; }
+  header span { color: #7f9aa3; font-size: 11px; }
+  ul { list-style: none; margin: 0; padding: 4px 0; }
+  li { display: flex; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #16262e; }
+  li:last-child { border-bottom: none; }
+  .txt { flex: 1; }
+  .name { color: #e6f6fa; font-weight: 700; }
+  .desc { color: #9fb6bd; font-size: 11px; }
+  kbd { align-self: flex-start; white-space: nowrap; padding: 1px 6px; border: 1px solid #2d4a55;
+        border-bottom-width: 2px; border-radius: 4px; background: #10222b; color: #5df0a0; font: inherit; }
+  kbd.none { color: #7f9aa3; border-color: #22363f; }
+  footer { padding: 8px 12px; color: #7f9aa3; font-size: 11px; border-top: 1px solid #2d4a55; }
+  footer a { color: #76c1d1; }
+</style>
+</head>
+<body>
+<header>
+  <img src="icons/icon-48.png" alt="">
+  <b>COR3 HELPER</b>
+  <span id="version"></span>
+</header>
+<ul>
+  <li><div class="txt"><div class="name">ICE WALL Break</div>
+    <div class="desc">Outlines where the target pattern can still fit.</div></div>
+    <kbd>Alt+H</kbd></li>
+  <li><div class="txt"><div class="name">Job tracker</div>
+    <div class="desc">Panel with your taken jobs, to-dos and server access.</div></div>
+    <kbd>Alt+J</kbd></li>
+  <li><div class="txt"><div class="name">Loadout &amp; market</div>
+    <div class="desc">Shows what programs and hardware do to your setup, and the best upgrade.</div></div>
+    <kbd>Alt+L</kbd></li>
+  <li><div class="txt"><div class="name">Expeditions</div>
+    <div class="desc">Clear risk and rewards in the game's popup when you hover a choice.</div></div>
+    <kbd class="none">always on</kbd></li>
+</ul>
+<footer>Shortcuts toggle each helper while cor3.gg is open.
+  <a href="https://github.com/nvanderwaal/cor3-helper#readme" target="_blank" rel="noopener">Help</a></footer>
+<script src="popup.js"></script>
+</body>
+</html>
