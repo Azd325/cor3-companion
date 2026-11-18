@@ -6,9 +6,8 @@ Browser extension for cor3.gg:
 
 - **[ICE WALL Break](#ice-wall-break)**: highlights where the target pattern fits on the board (Alt+H toggles).
 - **[Job tracker](#job-tracker)**: a panel with your taken jobs, their to-do items, server access and the route to
-  each server, maintenance
-  times and defence against your HACK power (Alt+J toggles), plus an access mark after the server names on the
-  market's job cards and a **DOABLE** tag on the jobs you can do now.
+  each server, maintenance times and defence against your HACK power (Alt+J toggles), plus a ✓ or ✗ on the
+  market's job cards that says whether you can do the job now.
 - **[Expeditions](#expeditions)**: makes the risk/rewards popup on decision options clear (higher/lower, more/less
   with the exact numbers, the mission risk after the choice and the time left to decide), and shows the exact risk
   score of a mission and the death chance of each mercenary (Alt+E toggles).
@@ -94,13 +93,11 @@ The bottom line shows when the market was last read, when the jobs reset and how
 The panel only updates job status while the market's Job tab has been opened, because the game only
 sends those updates there.
 
-On the market's job cards, each server name also gets a mark:
-green ✓ access, yellow ↪ within reach (directly or through servers you can hack), red ✗ no route or a defence
-above your HACK power, orange ⚠ maintenance, grey ? not on your network map yet.
-Hovering a mark shows the route and the same maintenance and defence details.
-
-A job whose servers are all yours or within reach gets a green **DOABLE** tag, and the best-paying of them
-gets **★ DOABLE**. Open the network map and your Loadout once so the tracker knows the routes and your HACK power.
+On the market's job cards, the servers line gets one mark for the whole job: green ✓ when you can do the job
+now (every server is yours, or within reach through servers your HACK power beats), red ✗ when you can't.
+Hovering the ✗ lists what blocks it, e.g. a server in maintenance with its time left, a defence above your
+HACK power, no route from Home, or a server that isn't on your network map yet. Open the network map and
+your Loadout once so the tracker knows the routes and your HACK power.
 
 ## Expeditions
 
@@ -122,7 +119,7 @@ The mission's risk level also shows the exact score, e.g. **MODERATE (52)**
 (the game rounds 0–33 to LOW, 34–66 to MODERATE, 67–100 to HIGH).
 
 When you set up an expedition, each mercenary the game has priced gets a line with its odds, e.g.
-**Death 4% · Fail, survives 12%** (red from 10% death). The one with the lowest death chance gets a **★**.
+**Death 4% · Fail, survives 12%** (red from 10% death).
 The odds appear once you've picked that mercenary in the setup, because that's when the game sends them; the
 mission risk then also shows the death chance, e.g. **MODERATE (52) · death 4%**.
 

@@ -7,7 +7,7 @@
 //   the choice, and the time left to decide.
 // - Adds the exact risk score (0-100) next to LOW / MODERATE / HIGH.
 // - Shows death and fail chance on the mercenary cards once the game has priced
-//   that mercenary, with a star on the safest one.
+//   that mercenary.
 // Alt+E or the toolbar menu toggles it. Reads only; never sends anything.
 (() => {
   "use strict";
@@ -324,8 +324,7 @@
     }
   }
 
-  // Odds on the game's mercenary cards, and a star on the safest one for the
-  // money among the mercenaries you've looked at.
+  // Odds on the game's mercenary cards.
   const ODDS_CLASS = "cor3-exp-odds";
   const pct = (n) => `${Math.round(n * 10) / 10}%`;
   function mercOf(el) {
@@ -344,13 +343,9 @@
       const had = cards.get(String(m.id));
       if (!had || el.contains(had)) cards.set(String(m.id), el);
     }
-    const known = [...cards.keys()].map((id) => [id, odds.get(id)]);
-    // Safest first: lowest death chance, then lowest fail chance, then cheapest.
-    known.sort((a, b) => a[1].death - b[1].death || (a[1].fail ?? 0) - (b[1].fail ?? 0) || (a[1].cost ?? 0) - (b[1].cost ?? 0));
-    const best = known.length > 1 ? known[0][0] : null;
     for (const [id, el] of cards) {
       const o = odds.get(id);
-      const text = `${id === best ? "\u2605 " : ""}Death ${pct(o.death)}${o.fail != null ? ` \u00b7 Fail, survives ${pct(o.fail)}` : ""}`;
+      const text = `Death ${pct(o.death)}${o.fail != null ? ` \u00b7 Fail, survives ${pct(o.fail)}` : ""}`;
       let line = el.querySelector(`:scope > .${ODDS_CLASS}`);
       if (!line) {
         line = document.createElement("div");
@@ -359,8 +354,8 @@
         el.appendChild(line);
       }
       if (line.textContent !== text) line.textContent = text;
-      line.style.color = o.death >= 10 ? RED : id === best ? GREEN : AMBER;
-      line.title = id === best ? "lowest death chance of the mercenaries you've looked at" : "chance this mercenary dies, or fails and comes back";
+      line.style.color = o.death >= 10 ? RED : AMBER;
+      line.title = "chance this mercenary dies, or fails and comes back";
     }
   }
 

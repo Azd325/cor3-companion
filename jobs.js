@@ -102,8 +102,6 @@
   try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (_) {}
   // Raw copies of the last job lists, for checking in the console (window.__cor3JobTracker).
   const debug = { lastJobs: null, lastRecentJobs: null };
-  // Job offers from the last market read (not stored; the market resends them).
-  let offers = [];
   window.__cor3JobTracker = { debug, state };
   const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {} };
 
@@ -174,7 +172,6 @@
       // Offers in the market's job tab (not taken yet).
       state.market = { ...(state.market || {}), offers: node.jobs.length, at: Date.now() };
       debug.lastJobs = node.jobs;
-      offers = node.jobs.filter((j) => j && typeof j === "object");
       changed = true;
     }
     if (Array.isArray(node.recentJobs)) {
@@ -662,77 +659,43 @@
     return out;
   }
 
-  function markFor(s) {
-    if (!s) return null;
+  // Why a server blocks a job right now, or null when it doesn't.
+  function blocker(token) {
+    const s = lookupServer(token);
+    if (!s) return `${token}: not on your network map yet, open the map`;
     const r = reach(s);
-    const m = inMaint(s) ? { ch: "&#9888;", color: "#ffa040", tip: "" }
-      : r.ok === true && (s.isAccessible || s.hasAdminAccess) ? { ch: "&#10003;", color: "#5df0a0", tip: r.tip }
-      : r.ok === false ? { ch: "&#10007;", color: "#ff8a70", tip: r.tip }
-      : { ch: "&#8618;", color: "#ffc800", tip: r.tip };
-    // Tooltip: the route, maintenance times and defence, as in the panel.
-    const route = r.route && r.route.length > 2 ? r.route.map((ip, i) => (i ? state.servers[ip]?.serverName || ip : "Home")).join(" > ") : "";
-    const extra = serverInfo(s).map((i) => i.text.replace(/ &#1000[37];/, "").replace(/&middot;/g, "-"));
-    m.tip = [m.tip, route && `route ${route}`, ...extra].filter(Boolean).join(", ");
-    m.ok = r.ok;
-    return m;
-  }
-
-  // Credits for the job on a card: the offer with the same servers (and name,
-  // when several share them). null when it can't be told apart.
-  function cardCredits(el, tokens) {
-    const want = new Set(tokens.map((t) => t.toLowerCase()));
-    let hits = offers.filter((o) => {
-      const rs = Array.isArray(o.relatedServers) ? o.relatedServers : [];
-      return rs.length === want.size && rs.every((x) =>
-        want.has(String(x?.serverName || "").toLowerCase()) || want.has(String(x?.serverIp || "").toLowerCase()));
-    });
-    if (hits.length > 1) {
-      const card = el.closest('[data-component-name="JobCardCollapsed"]') || el.parentElement?.parentElement;
-      const text = card ? card.textContent : "";
-      const named = hits.filter((o) => o.name && text.includes(o.name));
-      if (named.length) hits = named;
+    if (inMaint(s)) {
+      const l = shortLeft(s.maintenanceEndsAt);
+      return `${token}: in maintenance${l ? `, ${l} left` : ""}`;
     }
-    const credits = [...new Set(hits.map((o) => o.rewardCredits).filter((c) => typeof c === "number"))];
-    return credits.length === 1 ? credits[0] : null;
+    if (r.ok === true) return null;
+    const def = s.serverDefenceRate, hack = hackPower();
+    if (r.ok === false && r.text !== "no route" && typeof def === "number" && hack != null && hack < def) {
+      return `${token}: defence ${def} is above your HACK ${hack}`;
+    }
+    return `${token}: ${r.tip}`;
   }
 
-  const TAG_STYLE = "margin-left:6px;padding:0 4px;border-radius:3px;font-size:10px;font-weight:700;" +
-    "background:#144d30;color:#5df0a0";
-
+  // One mark per job card: ✓ when you can do the job now (every server is
+  // yours or within reach), ✗ otherwise. Hovering it says what blocks it.
   function annotateJobCards() {
-    const known = Object.keys(state.servers).length;
-    const cards = [];
     for (const { el, list } of serverLines()) {
       const tokens = list.split(",").map((t) => t.trim()).filter((t) => t && t !== "N/A");
       let mark = el.querySelector(`:scope > .${MARK_CLASS}`);
       if (!tokens.length) { if (mark) mark.remove(); continue; }
-
-      const marks = tokens.map((t) => markFor(lookupServer(t)));
-      const html = tokens.map((t, i) => {
-        const m = marks[i];
-        return m
-          ? `<span title="${esc(t)}: ${esc(m.tip)}" style="color:${m.color};font-weight:700">${m.ch}</span>`
-          : `<span title="${esc(t)}: unknown, not among the ${known} servers on your network map yet" style="color:#7f9aa3;font-weight:700">?</span>`;
-      }).join(" ");
-      // Doable now: every server is yours, or reachable with a HACK that beats it.
-      const doable = marks.every((m) => m && m.ok === true);
+      const blocks = tokens.map(blocker).filter(Boolean);
+      const ok = !blocks.length;
+      const tip = ok ? "You can do this job now: every server is yours or within reach" : `Blocked by:\n${blocks.join("\n")}`;
       if (!mark) {
         mark = document.createElement("span");
         mark.className = MARK_CLASS;
-        mark.style.marginLeft = "6px";
+        mark.style.cssText = "margin-left:6px;font-weight:700;cursor:help";
         el.appendChild(mark);
       }
-      cards.push({ mark, html, doable, credits: doable ? cardCredits(el, tokens) : null });
-    }
-    // The best-paying doable job gets a star.
-    const best = Math.max(...cards.map((c) => c.credits ?? -Infinity));
-    for (const c of cards) {
-      const star = c.credits != null && c.credits === best && cards.filter((x) => x.doable).length > 1;
-      const tag = c.doable
-        ? `<span style="${TAG_STYLE}" title="${star ? "best-paying job you can do now" : "you can do this job now: every server is yours or within reach"}">${star ? "&#9733; " : ""}DOABLE</span>`
-        : "";
-      const html = c.html + tag;
-      if (c.mark.innerHTML !== html) c.mark.innerHTML = html;
+      const ch = ok ? "\u2713" : "\u2717";
+      if (mark.textContent !== ch) mark.textContent = ch;
+      mark.style.color = ok ? "#5df0a0" : "#ff8a70";
+      if (mark.title !== tip) mark.title = tip;
     }
   }
 
