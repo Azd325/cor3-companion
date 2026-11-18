@@ -268,7 +268,7 @@
     .desc { color: #9fb6bd; margin-top: 2px; }
   `;
 
-  let host, root, panel;
+  let host, root, panel, lastHtml = "";
   function ensurePanel() {
     if (panel && document.documentElement.contains(host)) return true;
     if (!document.body) return false;
@@ -286,6 +286,7 @@
     }
     panel = document.createElement("div");
     panel.className = "p";
+    lastHtml = "";
     root.appendChild(panel);
     document.body.appendChild(host);
 
@@ -438,7 +439,7 @@
         html += `<div class="job ${j.canComplete ? "ready" : ""} ${done ? "done" : ""}">
           <div class="t"><span class="n">${esc(j.name || j.id)}</span>
             ${j.canComplete ? `<span class="badge ok">READY</span>` : `<span class="badge">${esc(j.status)}</span>`}</div>`;
-        if (!done && j.endTime) html += `<div class="time">${esc(timeLeft(j))}</div>`;
+        if (!done && j.endTime) html += `<div class="time" data-end="${esc(j.endTime)}"></div>`;
         if (j.features?.[0]) html += `<div class="desc">${esc(j.features[0])}</div>`;
         if (items.length) {
           html += `<div class="sec">To do</div>`;
@@ -463,7 +464,25 @@
       const reset = shortLeft(m?.resetAt);
       html += `<div class="empty">${m?.at ? `Market (${when}): ${m.offers ?? "?"} offers, ${m.taken ?? "?"} taken.<br>` : ""}${reset ? `Jobs reset in ${reset}.<br>` : ""}${seen} servers known from the network map.</div></div>`;
     }
+    // Rewriting the panel resets its scroll and can swallow a click, so only
+    // write it when something other than the ticking countdowns changed.
+    if (html === lastHtml) return tickTimes();
+    const body = panel.querySelector(".b");
+    const scroll = body ? body.scrollTop : 0;
     panel.innerHTML = html;
+    lastHtml = html;
+    tickTimes();
+    const nb = panel.querySelector(".b");
+    if (nb) nb.scrollTop = scroll;
+  }
+
+  // Countdowns update in place, without redrawing the panel.
+  function tickTimes() {
+    if (!panel) return;
+    for (const el of panel.querySelectorAll(".time[data-end]")) {
+      const t = timeLeft({ endTime: el.dataset.end });
+      if (el.textContent !== t) el.textContent = t;
+    }
   }
 
   // Alt+J or the toolbar menu shows or hides the panel.

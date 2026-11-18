@@ -53,9 +53,9 @@
     for (const d of decs.values()) {
       const t = toMs(d.deadline);
       if (d.isResolved || !(t > Date.now())) continue;
-      if (soonest == null || t < soonest) soonest = t;
+      if (!soonest || t < soonest.t) soonest = { t, d };
     }
-    return soonest == null ? null : { ms: soonest - Date.now(), text: left(soonest) };
+    return soonest && { ms: soonest.t - Date.now(), text: left(soonest.t), dec: soonest.d };
   }
 
   // ---------- bar ----------
@@ -77,7 +77,7 @@
     .bad { color: #ff8a70; font-weight: 700; }
     .dim { color: #7f9aa3; }
     .t { color: #ffc800; }
-    .menu { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 2147483645; min-width: 220px;
+    .menu { position: fixed; top: 24px; z-index: 2147483645; min-width: 220px; max-width: 360px;
             background: rgba(8,16,22,.97); border: 1px solid #2d4a55; border-radius: 6px; padding: 4px 0;
             color: #cfe7ee; font: 12px/1.4 ui-monospace, Consolas, monospace; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
     .row { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 100%;
@@ -85,13 +85,18 @@
     .row:hover { background: #10222b; }
     .row .n { flex: 1; }
     .row kbd { color: #5df0a0; font: inherit; font-size: 10px; }
+    .opt { padding: 5px 10px; border-top: 1px solid #16262e; }
+    .opt:first-of-type { border-top: none; }
+    .opt .l { color: #e6f6fa; font-weight: 700; }
+    .opt .v { font-size: 11px; }
+    .head { padding: 3px 10px 5px; color: #7f9aa3; font-size: 11px; border-bottom: 1px solid #2d4a55; }
     .sw { width: 26px; height: 14px; border-radius: 7px; border: 1px solid #2d4a55; background: #16262e; position: relative; }
     .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; border-radius: 50%; background: #7f9aa3; }
     .sw.on { background: #144d30; border-color: #2fae6a; }
     .sw.on::after { left: 14px; background: #5df0a0; }
   `;
 
-  let host, root, bar, menu, menuOpen = false, lastHtml = "";
+  let host, root, bar, menu, openMenu = null, lastHtml = "";
 
   function ensure() {
     if (host && document.documentElement.contains(host)) return true;
@@ -113,8 +118,8 @@
 
     bar.addEventListener("click", (e) => {
       const act = e.target.closest("[data-act]")?.dataset.act;
-      if (act === "min") { state.min = !state.min; menuOpen = false; save(); }
-      if (act === "menu") menuOpen = !menuOpen;
+      if (act === "min") { state.min = !state.min; openMenu = null; save(); }
+      if (act === "helpers" || act === "decision") openMenu = openMenu === act ? null : act;
       if (act === "jobs") toggles().jobs?.set(true);
       render(true);
     });
@@ -126,7 +131,7 @@
     });
     // A click anywhere else closes the menu.
     window.addEventListener("mousedown", (e) => {
-      if (menuOpen && !e.composedPath().includes(host)) { menuOpen = false; render(true); }
+      if (openMenu && !e.composedPath().includes(host)) { openMenu = null; render(true); }
     }, true);
     return true;
   }
@@ -147,10 +152,10 @@
 
     const d = decisionInfo();
     if (d) {
-      parts.push(`<span class="seg" title="An expedition is waiting for your decision">Decision <span class="${d.ms < 60e3 ? "bad" : "warn"}">${d.text}</span></span>`);
+      parts.push(`<button class="seg" data-act="decision" title="Show the choices with their exact risk and loot">Decision <span class="${d.ms < 60e3 ? "bad" : "warn"}">${d.text}</span> &#9662;</button>`);
     }
 
-    parts.push(`<button class="seg" data-act="menu" title="Switch helpers">Helpers &#9662;</button>`);
+    parts.push(`<button class="seg" data-act="helpers" title="Switch helpers">Helpers &#9662;</button>`);
     return parts.join("");
   }
 
@@ -163,6 +168,35 @@
     }).join("");
   }
 
+  // The open decision's choices with their exact numbers, from the expedition data.
+  const esc = (x) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (n, goodUp) => {
+    if (typeof n !== "number") return `<span class="dim">?</span>`;
+    const cls = n === 0 ? "dim" : (n > 0) === goodUp ? "ok" : "bad";
+    return `<span class="${cls}">${n > 0 ? "+" : n < 0 ? "&minus;" : "&plusmn;"}${Math.abs(n)}</span>`;
+  };
+  function decisionHtml() {
+    const d = decisionInfo();
+    if (!d) return `<div class="head">No decision open.</div>`;
+    const risk = d.dec.riskScore;
+    let html = `<div class="head">${typeof risk === "number" ? `Mission risk now ${risk}. ` : ""}Pick in the game's window.</div>`;
+    for (const o of d.dec.options || []) {
+      const after = typeof risk === "number" && typeof o.riskModifier === "number"
+        ? ` &middot; <span class="dim">risk &rarr; ${Math.max(0, Math.min(100, risk + o.riskModifier))}</span>` : "";
+      html += `<div class="opt"><div class="l">${esc(o.label)}</div><div class="v">Risk ${num(o.riskModifier, false)} &middot; Loot ${num(o.lootModifier, true)}${after}</div></div>`;
+    }
+    return html;
+  }
+
+  // Line the open menu up under its button, right edges together.
+  function placeMenu() {
+    const btn = bar.querySelector(`[data-act="${openMenu}"]`);
+    if (!btn) { openMenu = null; return; }
+    const r = btn.getBoundingClientRect();
+    menu.style.top = r.bottom + 2 + "px";
+    menu.style.right = Math.max(8, window.innerWidth - r.right) + "px";
+  }
+
   function render(force) {
     if (!state.open) { if (host) host.style.display = "none"; return; }
     if (document.hidden && !force) return;
@@ -170,12 +204,17 @@
     host.style.display = "";
     const html = barHtml();
     if (html !== lastHtml) { bar.innerHTML = html; lastHtml = html; }
-    menu.hidden = !menuOpen || state.min;
-    if (!menu.hidden) menu.innerHTML = menuHtml();
+    if (state.min) openMenu = null;
+    if (openMenu) placeMenu();
+    menu.hidden = !openMenu;
+    if (openMenu) {
+      const html = openMenu === "helpers" ? menuHtml() : decisionHtml();
+      if (menu.innerHTML !== html) menu.innerHTML = html;
+    }
   }
 
   // Alt+B or the toolbar menu shows or hides the bar.
-  const setOpen = (on) => { state.open = on; if (!on) menuOpen = false; save(); render(true); };
+  const setOpen = (on) => { state.open = on; if (!on) openMenu = null; save(); render(true); };
   (window.__cor3Toggles = window.__cor3Toggles || {}).topbar = { get: () => state.open, set: setOpen };
   window.addEventListener("keydown", (e) => {
     if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "b") { e.preventDefault(); setOpen(!state.open); }
