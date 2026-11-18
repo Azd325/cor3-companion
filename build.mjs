@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 const root = dirname(fileURLToPath(import.meta.url));
 const dist = join(root, "dist");
 const FILES = [
-  "jobs.js", "loadout.js", "solver.js", "expeditions.js", "popup.html", "popup.js",
+  "toggles.js", "bridge.js", "jobs.js", "loadout.js", "solver.js", "expeditions.js", "popup.html", "popup.js",
   "icons/icon-16.png", "icons/icon-32.png", "icons/icon-48.png", "icons/icon-128.png",
 ];
 const base = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8"));

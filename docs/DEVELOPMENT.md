@@ -1,6 +1,7 @@
 # Development
 
 Edit `jobs.js`, `solver.js`, `expeditions.js`, `loadout.js`, `popup.html` or `manifest.json` in the project root.
+Each helper registers an on/off switch in `toggles.js` (page side); `bridge.js` passes the toolbar menu's switches to it.
 The toolbar icons in `icons/` are made from `icons/icon.svg` with `node make-icons.mjs`.
 
 ## Build

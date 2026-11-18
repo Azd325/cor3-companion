@@ -5,14 +5,17 @@
 Browser extension for cor3.gg:
 
 - **[ICE WALL Break](#ice-wall-break)**: highlights where the target pattern fits on the board (Alt+H toggles).
-- **[Job tracker](#job-tracker)**: a panel with your taken jobs, their to-do items and server access (Alt+J toggles),
-  plus an access mark after the server names on the market's job cards.
+- **[Job tracker](#job-tracker)**: a panel with your taken jobs, their to-do items, server access, maintenance
+  times and defence against your HACK power (Alt+J toggles), plus an access mark after the server names on the
+  market's job cards.
 - **[Expeditions](#expeditions)**: makes the risk/rewards popup on decision options clear (higher/lower, more/less
-  and a one-line verdict), and shows the exact risk score of a mission.
+  with the exact numbers, the mission risk after the choice and the time left to decide), and shows the exact risk
+  score of a mission (Alt+E toggles).
 - **[Loadout & market](#loadout--market)**: shows what a program or hardware part would do to your setup, on the
   loadout page and on the market's cards, and stars the best upgrade (Alt+L toggles).
 
-Click the extension's icon in the toolbar for a list of the helpers and their shortcuts.
+Click the extension's icon in the toolbar for a list of the helpers with a switch for each, which turns the
+helper on or off in your open cor3.gg tabs, the same as its shortcut.
 
 <img src="docs/menu.png" alt="Toolbar menu listing the four helpers and their shortcuts" width="300">
 
@@ -66,14 +69,19 @@ A panel you can drag around, minimise or hide with Alt+J. For every job you've t
 - the time left, and **READY** (green border) once the game says the job can be completed,
 - a **to-do** list with the IPs, files and logs to handle, each with a checkbox you tick yourself,
 - the job's servers with your access: **admin**, **access**, **no access**, **unreachable** or
-  **maintenance**, or **? unknown** until you've opened the network map.
+  **maintenance**, or **? unknown** until you've opened the network map,
+- for a server in maintenance, how long it has left (**maintenance, 12m left**), and **maint. in 25m**
+  when maintenance starts within 2 hours,
+- for a server you don't have access to yet, its defence against your best HACK power, e.g.
+  **DEF 50 · HACK 42 ✗** (red when your HACK power is lower). Open your Loadout once so it knows your HACK power.
 
-The bottom line shows when the market was last read and how many servers are known.
+The bottom line shows when the market was last read, when the jobs reset and how many servers are known.
 The panel only updates job status while the market's Job tab has been opened, because the game only
 sends those updates there.
 
 On the market's job cards, each server name also gets a mark:
 green ✓ access, red ✗ no access, orange ⚠ maintenance, grey ? not on your network map yet.
+Hovering a mark shows the same maintenance and defence details.
 
 ## Expeditions
 
@@ -81,10 +89,15 @@ When a drone event asks for a decision, hovering an option shows the game's popu
 **Rewards** chevrons, which are small and coloured the wrong way round ("risk up" is green). The helper
 makes that popup clear:
 
-- After each word it writes what changes, in the right colour: Risk **HIGHER** (red), **LOWER** (green)
-  or **SAME**; Rewards **MORE** (green), **LESS** (red) or **SAME**.
-- A line under it sums the option up: **★ No downside**, **Trade-off: more loot, more danger**,
-  **Trade-off: safer, less loot**, **✕ More danger, nothing gained**, and so on.
+- After each word it writes what changes and by how much, in the right colour: Risk **HIGHER +8** (red),
+  **LOWER −20** (green) or **SAME**; Rewards **MORE +3** (green), **LESS −2** (red) or **SAME**.
+- A line under it sums the option up: **★ No downside**, **Trade-off: +3 loot for +8 risk**,
+  **Trade-off: −20 risk for −2 loot**, **✕ More danger, nothing gained**, and so on.
+- Under that, the mission's risk after the choice (**Mission risk 52 → 60**, with the new level when it
+  changes) and the time left to decide.
+
+The numbers come from the expedition data the game sends when you open Expeditions. Without it the popup
+still shows the words, just without numbers. Alt+E turns the helper off and on.
 
 The mission's risk level also shows the exact score, e.g. **MODERATE (52)**
 (the game rounds 0–33 to LOW, 34–66 to MODERATE, 67–100 to HIGH).

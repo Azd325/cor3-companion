@@ -133,9 +133,11 @@
     }
   }
 
-  // Alt+H toggles the overlay.
+  // Alt+H or the toolbar menu toggles the overlay.
+  const setEnabled = (on) => { enabled = on; tick(); };
+  (window.__cor3Toggles = window.__cor3Toggles || {}).icewall = { get: () => enabled, set: setEnabled };
   window.addEventListener("keydown", (e) => {
-    if (e.altKey && e.key.toLowerCase() === "h") { enabled = !enabled; tick(); }
+    if (e.altKey && e.key.toLowerCase() === "h") setEnabled(!enabled);
   });
 
   setInterval(tick, 250);
