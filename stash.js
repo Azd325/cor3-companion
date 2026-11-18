@@ -1,6 +1,6 @@
 // COR3 inventory helper.
-// On the game's inventory page: the sell price on every item, a gold border on
-// the items worth the most, and one line with the stash's total value.
+// On the game's inventory page: the sell price on every item, a border in the
+// item's rarity colour (none for common), and one line with the stash's total value.
 // Uses the stash data the game sends when you open the inventory (through the
 // websocket hook in jobs.js). Alt+I or the toolbar menu toggles it.
 // Reads only; never sends anything.
@@ -8,7 +8,9 @@
   "use strict";
 
   const PRICE_CLASS = "cor3-inv-price", SUM_CLASS = "cor3-inv-sum", TOP_ATTR = "data-cor3-inv-top";
-  const GOLD = "#ffc800";
+  // Border per rarity (the game's `tier`); common items get none.
+  const TIER_COLOR = { rare: "#4da3ff", epic: "#b06cff", legendary: "#ffa040", quest: "#5df0a0" };
+  const tierColor = (it) => TIER_COLOR[String(it.tier || "").toLowerCase()] || null;
 
   // ---------- on/off ----------
   const STORE_KEY = "cor3-inventory-helper";
@@ -85,11 +87,6 @@
     }
     if (!tiles.size) return;
 
-    // The most valuable items: the top tenth by price (at least one, at most 8).
-    const sellable = [...stash.items.values()].filter(price).sort((a, b) => price(b) - price(a));
-    const n = Math.min(8, Math.max(1, Math.round(sellable.length / 10)));
-    const top = new Set(sellable.slice(0, n));
-
     for (const [it, el] of tiles) {
       const p = price(it);
       let tag = el.querySelector(`:scope > .${PRICE_CLASS}`);
@@ -104,11 +101,12 @@
         }
         const text = `${fmt(p)} cr`;
         if (tag.textContent !== text) tag.textContent = text;
-        tag.style.color = top.has(it) ? GOLD : "#cfe7ee";
+        tag.style.color = tierColor(it) || "#cfe7ee";
         tag.title = qty(it) > 1 ? `sells for ${p.toLocaleString()} each, ${(p * qty(it)).toLocaleString()} for all ${qty(it)}` : `sells for ${p.toLocaleString()}`;
       }
-      if (top.has(it)) {
-        if (!el.hasAttribute(TOP_ATTR)) { el.setAttribute(TOP_ATTR, ""); el.style.outline = `2px solid ${GOLD}`; el.style.outlineOffset = "-2px"; }
+      const color = tierColor(it);
+      if (color) {
+        if (el.getAttribute(TOP_ATTR) !== color) { el.setAttribute(TOP_ATTR, color); el.style.outline = `2px solid ${color}`; el.style.outlineOffset = "-2px"; }
       } else if (el.hasAttribute(TOP_ATTR)) { el.removeAttribute(TOP_ATTR); el.style.outline = ""; }
     }
 
@@ -125,8 +123,7 @@
       grid.parentElement.insertBefore(sum, grid);
     }
     const total = [...stash.items.values()].reduce((s, it) => s + price(it) * qty(it), 0);
-    const text = `Stash value ${total.toLocaleString()} cr` + (stash.max ? ` · ${stash.used}/${stash.max} slots` : "") +
-      (top.size ? ` · gold: your ${top.size} most valuable` : "");
+    const text = `Stash value ${total.toLocaleString()} cr` + (stash.max ? ` \u00b7 ${stash.used}/${stash.max} slots` : "");
     if (sum.textContent !== text) sum.textContent = text;
   }
 

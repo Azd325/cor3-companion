@@ -13,8 +13,8 @@ Browser extension for cor3.gg:
   score of a mission and the death chance of each mercenary (Alt+E toggles).
 - **[Loadout & market](#loadout--market)**: shows what a program or hardware part would do to your setup, on the
   loadout page and on the market's cards, and stars the best upgrade (Alt+L toggles).
-- **[Inventory](#inventory)**: the sell price on every item in your inventory and a gold border on the most
-  valuable ones (Alt+I toggles).
+- **[Inventory](#inventory)**: the sell price on every item in your inventory and a border in its
+  rarity colour (Alt+I toggles).
 - **[Lighter screen](#lighter-screen)**: hides the moving backgrounds and the network map fog (off by default,
   Alt+V toggles).
 - **[Top bar](#top-bar)**: a thin strip at the top of the game with what needs you now and a menu to switch the
@@ -172,8 +172,9 @@ Click **◆ COR3** to shrink the bar to a single diamond, or press Alt+B to hide
 ## Inventory
 
 When you open your inventory, every item you can sell gets its sell price in its corner, e.g. **12k cr**.
-The most valuable tenth of your items (at least one, at most 8) get a gold border and a gold price, so you
-see at a glance what to keep safe and what to sell. A line above the items shows the total value of your
+Items also get a border in their rarity colour, using the rarity the game gives each item: blue for rare,
+purple for epic, orange for legendary and green for quest items. Common items keep the game's own look.
+The price takes the same colour. A line above the items shows the total value of your
 stash and the slots used, e.g. **Stash value 48,200 cr · 34/40 slots**. Hovering a price on a stack shows
 the value of the whole stack. Alt+I turns it off and on.
 
