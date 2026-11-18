@@ -16,6 +16,8 @@ on:
       - "README.md"
       - ".gitignore"
       - ".env.example"
+      - ".gitattributes"
+      - ".github/**"
   workflow_dispatch:
     inputs:
       bump:
@@ -34,6 +36,9 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # A normal run takes 1-3 minutes; stop a stuck signing step instead of
+    # letting it run for GitHub's default 6 hours.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
