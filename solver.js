@@ -8,7 +8,9 @@
   const W = 63, F = 54, T = 31.5;
   const NS = "http://www.w3.org/2000/svg";
   const OVERLAY_ID = "iwb-helper-overlay";
+  const STORE_KEY = "cor3-icewall-helper";
   let enabled = true;
+  try { enabled = JSON.parse(localStorage.getItem(STORE_KEY) || "{}").enabled !== false; } catch (_) {}
 
   function triPoints(cell, gridHeight) {
     const a = 2 * cell.row + 1;
@@ -134,7 +136,11 @@
   }
 
   // Alt+H or the toolbar menu toggles the overlay.
-  const setEnabled = (on) => { enabled = on; tick(); };
+  const setEnabled = (on) => {
+    enabled = on;
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ enabled })); } catch (_) {}
+    tick();
+  };
   (window.__cor3Toggles = window.__cor3Toggles || {}).icewall = { get: () => enabled, set: setEnabled };
   window.addEventListener("keydown", (e) => {
     if (e.altKey && e.key.toLowerCase() === "h") setEnabled(!enabled);

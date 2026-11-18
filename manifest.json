@@ -42,7 +42,8 @@
       ],
       "js": [
         "solver.js",
-        "expeditions.js"
+        "expeditions.js",
+        "topbar.js"
       ],
       "run_at": "document_idle",
       "world": "MAIN"

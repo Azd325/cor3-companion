@@ -13,6 +13,8 @@ Browser extension for cor3.gg:
   score of a mission (Alt+E toggles).
 - **[Loadout & market](#loadout--market)**: shows what a program or hardware part would do to your setup, on the
   loadout page and on the market's cards, and stars the best upgrade (Alt+L toggles).
+- **[Top bar](#top-bar)**: a thin strip at the top of the game with what needs you now and a menu to switch the
+  helpers (Alt+B toggles).
 
 Click the extension's icon in the toolbar for a list of the helpers with a switch for each, which turns the
 helper on or off in your open cor3.gg tabs, the same as its shortcut.
@@ -129,6 +131,21 @@ software. Only parts that boot and programs that fit can get it.
 The game works out program power on its server, so power for a setup you don't have yet is an
 estimate (marked ≈). For programs that are installed, the helper starts from the game's real number
 and only estimates the change.
+
+## Top bar
+
+<img src="docs/topbar.png" alt="Top bar with jobs, an open decision and the helper switches" width="600">
+
+A small strip at the top centre of the game. It only shows what needs you now, and leaves a part out when there's
+nothing to say:
+
+- **Jobs 2 · 1 READY · next 42m**: your taken jobs, how many you can hand in, and the time left on the next job that
+  still needs work (red under 15 minutes). Click it to open the job tracker. With no jobs taken it shows when the
+  market's jobs reset.
+- **Decision 2m 10s**: an expedition is waiting for your choice, with the time left (red under a minute).
+- **Helpers ▾**: the same switches as the toolbar menu, so you don't have to leave the game.
+
+Click **◆ COR3** to shrink the bar to a single diamond, or press Alt+B to hide it. It remembers your choice.
 
 ## Development
 
