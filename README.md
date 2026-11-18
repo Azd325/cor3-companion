@@ -8,6 +8,37 @@ Browser extension for cor3.gg:
 
 It only reads what the game already sends to your browser; it never sends anything itself.
 
+## ICE WALL Break
+
+![ICE WALL Break board with candidate placements outlined in yellow](docs/ice-wall.png)
+
+The helper tries every spot where the target pattern could fit and drops the ones that clash with a
+revealed glyph or that you already guessed wrong.
+
+- **Yellow outlines**: spots that are still possible (up to 6, the ones with the most matching
+  revealed glyphs first). The text on top says how many are left, e.g. "10 possible · best 1/5 known".
+- **Green outline + MATCH**: only one spot is left; that's the answer.
+
+As more glyphs are revealed the yellow options shrink until one turns green.
+
+## Job tracker
+
+![Job tracker panel with two taken File Decryption jobs and their to-do items](docs/job-tracker.png)
+
+A panel you can drag around, minimise or hide with Alt+J. For every job you've taken it shows:
+
+- the time left, and **READY** (green border) once the game says the job can be completed,
+- a **to-do** list with the IPs, files and logs to handle, each with a checkbox you tick yourself,
+- the job's servers with your access: **admin**, **access**, **no access**, **unreachable** or
+  **maintenance**, or **? unknown** until you've opened the network map.
+
+The bottom line shows when the market was last read and how many servers are known.
+The panel only updates job status while the market's Job tab has been opened, because the game only
+sends those updates there.
+
+On the market's job cards, each server name also gets a mark:
+green ✓ access, red ✗ no access, orange ⚠ maintenance, grey ? not on your network map yet.
+
 ## Releases (GitHub Actions)
 
 `.github/workflows/release.yml` runs on every push to `main`, or by hand from the **Actions** tab
