@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "COR3 Helper",
+  "version": "1.2.0",
+  "description": "ICE WALL pattern highlighter and a job tracker panel for cor3.gg.",
+  "host_permissions": ["*://cor3.gg/*", "*://*.cor3.gg/*"],
+  "content_scripts": [
+    {
+      "matches": ["*://cor3.gg/*", "*://*.cor3.gg/*"],
+      "js": ["jobs.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["*://cor3.gg/*", "*://*.cor3.gg/*"],
+      "js": ["solver.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "icewall-helper@local",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  }
+}
