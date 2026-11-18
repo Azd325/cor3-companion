@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const dist = join(root, "dist");
-const FILES = ["jobs.js", "solver.js"];
+const FILES = ["jobs.js", "solver.js", "expeditions.js"];
 const base = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8"));
 
 // FIREFOX_UPDATE_URL (set by the GitHub release workflow) lets installed

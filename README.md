@@ -5,8 +5,36 @@ Browser extension for cor3.gg:
 - **ICE WALL Break**: highlights where the target pattern fits on the board (Alt+H toggles).
 - **Job tracker**: a panel with your taken jobs, their to-do items and server access (Alt+J toggles),
   plus an access mark after the server names on the market's job cards.
+- **Expeditions**: shows each decision option's risk and loot change right on the button,
+  and the exact risk score of a mission.
 
 It only reads what the game already sends to your browser; it never sends anything itself.
+
+## Install
+
+Download the files from the [latest release](https://github.com/nvanderwaal/cor3-helper/releases/latest).
+
+### Firefox
+
+1. Click `cor3-helper-firefox.xpi` in the latest release.
+2. Firefox asks to install the add-on; click **Continue to Installation**, then **Add**.
+
+The add-on is signed by Mozilla, so it works in normal Firefox and stays installed.
+It **updates itself** when a new release comes out (Firefox checks about once a day;
+`about:addons` > gear icon > **Check for Updates** checks right away).
+
+If nothing shows up on cor3.gg, click the puzzle-piece icon in the toolbar and allow the add-on on cor3.gg.
+
+### Chrome (or Edge, Brave)
+
+1. Download `cor3-helper-chrome.zip` and unzip it into a folder you keep, e.g. `Documents\cor3-helper`.
+   Chrome loads the extension from that folder, so don't delete it.
+2. Open `chrome://extensions` (Edge: `edge://extensions`) and turn on **Developer mode** (top right).
+3. Click **Load unpacked** and pick that folder.
+
+Chrome can't update extensions from outside the Chrome Web Store. For a new version, unzip the new
+release's zip over the same folder and click the reload icon on the extension's card.
+Chrome may show a "developer mode extensions" notice at startup; that's normal for unpacked extensions.
 
 ## ICE WALL Break
 
@@ -39,25 +67,22 @@ sends those updates there.
 On the market's job cards, each server name also gets a mark:
 green ✓ access, red ✗ no access, orange ⚠ maintenance, grey ? not on your network map yet.
 
-## Releases (GitHub Actions)
+## Expeditions
 
-`.github/workflows/release.yml` runs on every push to `main`, or by hand from the **Actions** tab
-(**Release** > **Run workflow**, where you can pick patch, minor or major). It:
+When a drone event asks for a decision, the game only shows what each option does to risk and loot
+in a hover tooltip, and colours "risk up" green. The helper puts it under every button instead:
 
-1. bumps `version` in `manifest.json` (`node bump.mjs`),
-2. builds both packages and signs the Firefox one with Mozilla (`node sign.mjs`),
-3. commits the new version, tags it `vX.Y.Z` and publishes a GitHub release with
-   `cor3-helper-firefox.xpi`, `cor3-helper-chrome.zip` and `updates.json`.
+- **Risk ▲** red, **Risk ▼** green; **Loot ▲** green, **Loot ▼** red; **–** means no change.
+- **★** marks a clear win: less risk or more loot, without a downside.
 
-It needs two repository secrets (Settings > Secrets and variables > Actions):
-`WEB_EXT_API_KEY` (JWT issuer) and `WEB_EXT_API_SECRET` (JWT secret). Pull first after a release,
-since the workflow pushes the version commit to `main`.
+The mission's risk level also shows the exact score, e.g. **MODERATE (52)**
+(the game rounds 0–33 to LOW, 34–66 to MODERATE, 67–100 to HIGH).
 
-**Firefox** copies installed from a release update themselves: their manifest points at the
-latest release's `updates.json`. **Chrome** can't auto-update extensions from outside the Chrome Web Store:
-download the new zip, unzip it over your extension folder and click reload in `chrome://extensions`.
+## Development
 
-## Build
+Edit `jobs.js`, `solver.js`, `expeditions.js` or `manifest.json` in the project root.
+
+### Build
 
 ```
 node build.mjs
@@ -67,44 +92,33 @@ This writes `dist/`:
 
 | Output | Use |
 |---|---|
-| `dist/chrome/` | Chrome / Edge / Brave: "Load unpacked" |
+| `dist/chrome/` | Chrome: **Load unpacked** this folder to test |
 | `dist/cor3-helper-chrome.zip` | Same files, zipped |
-| `dist/firefox/` | Firefox: temporary load, or source for signing |
-| `dist/cor3-helper-firefox.xpi` | Firefox: install from file |
+| `dist/firefox/` | Firefox: `about:debugging` > **Load Temporary Add-on** > `manifest.json` (gone after restart) |
+| `dist/cor3-helper-firefox.xpi` | Unsigned Firefox package |
 
-Edit `jobs.js`, `solver.js` or `manifest.json` in the project root, then build again.
+### Releases (GitHub Actions)
 
-## Install in Chrome (or Edge, Brave)
+`.github/workflows/release.yml` runs on every push to `main` that changes the extension, or by hand
+from the **Actions** tab (**Release** > **Run workflow**, where you can pick patch, minor or major). It:
 
-1. Open `chrome://extensions` (Edge: `edge://extensions`).
-2. Turn on **Developer mode** (top right).
-3. Click **Load unpacked** and pick the `dist/chrome` folder, or a folder where you unzipped
-   `cor3-helper-chrome.zip` from a release. Keep that folder; Chrome loads the extension from it.
+1. bumps `version` in `manifest.json` (`node bump.mjs`),
+2. builds both packages and signs the Firefox one with Mozilla (`node sign.mjs`),
+3. commits the new version, tags it `vX.Y.Z` and publishes a GitHub release with
+   `cor3-helper-firefox.xpi`, `cor3-helper-chrome.zip` and `updates.json`.
 
-It stays installed across restarts. After a rebuild, click the reload icon on the extension's card.
-Chrome may show a "developer mode extensions" notice at startup; that's normal for unpacked extensions.
+Changes to only the README, `docs/` or the workflow don't start a release. A run takes 3–5 minutes,
+most of it "Waiting for approval..." while Mozilla signs; don't cancel it, a signed version can't be
+signed again. Pull after a release, since the workflow pushes the version commit to `main`.
 
-## Install in Firefox
+It needs two repository secrets (Settings > Secrets and variables > Actions):
+`WEB_EXT_API_KEY` (JWT issuer) and `WEB_EXT_API_SECRET` (JWT secret), from
+https://addons.mozilla.org/developers/addon/api/key/
 
-Release Firefox only installs extensions permanently if Mozilla has signed them. Pick one:
+### Signing locally
 
-**A. Sign it yourself (works in normal Firefox, stays installed)**
-1. Create a free account on addons.mozilla.org, then get API keys at
-   https://addons.mozilla.org/developers/addon/api/key/
-2. Copy `.env.example` to `.env` and put your JWT issuer and secret in it (`.env` is git-ignored).
-3. Run:
-   ```
-   node sign.mjs
-   ```
-   This builds, then signs `dist/firefox` as "unlisted" (signed, but not published in the add-on store).
-4. Drag the signed `.xpi` from `web-ext-artifacts/` onto a Firefox window and confirm.
-   Bump `version` in `manifest.json` before signing again; each version can be signed once.
+1. Copy `.env.example` to `.env` and fill in the same two keys (`.env` is git-ignored).
+2. Bump `version` in `manifest.json`, then run `node sign.mjs`.
+   The signed `.xpi` lands in `web-ext-artifacts/`.
 
-**B. Firefox Developer Edition / Nightly (no signing)**
-1. Open `about:config`, set `xpinstall.signatures.required` to `false`.
-2. Open `about:addons` > gear icon > **Install Add-on From File** > `dist/cor3-helper-firefox.xpi`.
-
-**C. Temporary (any Firefox, gone after restart)**
-`about:debugging#/runtime/this-firefox` > **Load Temporary Add-on** > `dist/firefox/manifest.json`.
-
-If nothing shows up on cor3.gg in Firefox, click the puzzle-piece icon and allow the extension on cor3.gg.
+Use the GitHub release instead where you can: a version signed locally can't be released by the workflow.
