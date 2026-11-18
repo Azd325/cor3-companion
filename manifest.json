@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "COR3 Helper",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "ICE WALL pattern highlighter and a job tracker panel for cor3.gg.",
   "host_permissions": ["*://cor3.gg/*", "*://*.cor3.gg/*"],
   "content_scripts": [
