@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "COR3 Helper",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "ICE WALL pattern highlighter, job tracker, loadout and market upgrade helper and clearer expedition risk/rewards for cor3.gg.",
   "icons": {
     "16": "icons/icon-16.png",
