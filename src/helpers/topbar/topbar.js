@@ -6,23 +6,16 @@
 (() => {
   "use strict";
 
+  const { esc, toMs, load, save: store, shadowHost } = window.__cor3;
   const STORE_KEY = "cor3-topbar";
-  const state = { open: true, min: false };
-  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (_) {}
-  const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {} };
+  const state = load(STORE_KEY, { open: true, min: false });
+  const save = () => store(STORE_KEY, state);
 
-  // The helpers in the menu, in the toolbar menu's order.
-  const HELPERS = [
-    ["icewall", "ICE WALL Break", "Alt+H"],
-    ["jobs", "Job tracker", "Alt+J"],
-    ["loadout", "Loadout & market", "Alt+L"],
-    ["expeditions", "Expeditions", "Alt+E"],
-    ["topbar", "Top bar", "Alt+B"],
-  ];
+  // The helpers in the menu, in the toolbar menu's order (shared/helpers-list.js).
+  const HELPERS = window.__cor3Helpers || [];
   const toggles = () => window.__cor3Toggles || {};
 
   // ---------- data ----------
-  const toMs = (v) => (v instanceof Date ? v.getTime() : typeof v === "string" ? Date.parse(v) : typeof v === "number" ? v : NaN);
   // "1h 05m", "42m", "4m 30s", "40s"; null when unknown or past.
   function left(v) {
     const ms = toMs(v) - Date.now();
@@ -56,6 +49,21 @@
       if (!soonest || t < soonest.t) soonest = { t };
     }
     return soonest && { ms: soonest.t - Date.now(), text: left(soonest.t) };
+  }
+
+  // An expedition that is back (its loot waits for you), or one coming back
+  // within 10 minutes. Nothing while it's still out for longer.
+  function expeditionInfo() {
+    const exps = window.__cor3Expeditions?.expeditions;
+    if (!exps) return null;
+    let back = 0, soon = null;
+    for (const e of exps.values()) {
+      const t = toMs(e.endTime);
+      if ((e.status === "COMPLETED" && !e.opened) || (e.status === "RUNNING" && t <= Date.now())) back++;
+      else if (e.status === "RUNNING" && t - Date.now() < 10 * 60e3 && (!soon || t < soon)) soon = t;
+    }
+    if (back) return { back };
+    return soon ? { text: left(soon) } : null;
   }
 
   // ---------- bar ----------
@@ -96,12 +104,7 @@
   function ensure() {
     if (host && document.documentElement.contains(host)) return true;
     if (!document.body) return false;
-    host = document.createElement("div");
-    host.id = "cor3-topbar-host";
-    root = host.attachShadow({ mode: "open" });
-    const st = document.createElement("style");
-    st.textContent = CSS;
-    root.appendChild(st);
+    ({ host, root } = shadowHost("cor3-topbar-host", CSS));
     bar = document.createElement("div");
     bar.className = "bar";
     menu = document.createElement("div");
@@ -154,16 +157,23 @@
       parts.push(`<button class="seg" data-act="decision" title="Open the expedition in the game">Decision <span class="${d.ms < 60e3 ? "bad" : "warn"}">${d.text}</span></button>`);
     }
 
+    const x = expeditionInfo();
+    if (x) {
+      parts.push(x.back
+        ? `<button class="seg" data-act="decision" title="Open the expedition in the game"><span class="ok">Expedition back</span></button>`
+        : `<button class="seg" data-act="decision" title="Open the expedition in the game">Expedition back in <span class="t">${x.text}</span></button>`);
+    }
+
     parts.push(`<button class="seg" data-act="helpers" title="Switch helpers">Helpers &#9662;</button>`);
     return parts.join("");
   }
 
   function menuHtml() {
     const t = toggles();
-    return HELPERS.filter(([id]) => t[id]).map(([id, name, key]) => {
+    return HELPERS.filter(({ id }) => t[id]).map(({ id, name, key }) => {
       let on = false;
       try { on = !!t[id].get(); } catch (_) {}
-      return `<button class="row" data-id="${id}"><span class="sw ${on ? "on" : ""}"></span><span class="n">${name.replace("&", "&amp;")}</span><kbd>${key}</kbd></button>`;
+      return `<button class="row" data-id="${id}"><span class="sw ${on ? "on" : ""}"></span><span class="n">${esc(name)}</span><kbd>Alt+${key}</kbd></button>`;
     }).join("");
   }
 
@@ -218,11 +228,7 @@
   }
 
   // Alt+B or the toolbar menu shows or hides the bar.
-  const setOpen = (on) => { state.open = on; if (!on) openMenu = null; save(); render(true); };
-  (window.__cor3Toggles = window.__cor3Toggles || {}).topbar = { get: () => state.open, set: setOpen };
-  window.addEventListener("keydown", (e) => {
-    if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "b") { e.preventDefault(); setOpen(!state.open); }
-  });
+  window.__cor3.helper("topbar", () => state.open, (on) => { state.open = on; if (!on) openMenu = null; save(); render(true); });
 
   setInterval(() => { try { render(false); } catch (e) { console.warn("[cor3 topbar]", e); } }, 1000);
   render(true);

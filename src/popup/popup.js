@@ -1,10 +1,37 @@
 // Toolbar menu: version, and a switch per helper that talks to the open
-// cor3.gg tabs (bridge.js passes it on to the helpers in the page).
+// cor3.gg tabs (shared/bridge.js passes it on to the helpers in the page).
 const api = globalThis.browser ?? globalThis.chrome;
 document.getElementById("version").textContent = "v" + api.runtime.getManifest().version;
 
 const COR3 = ["*://cor3.gg/*", "*://*.cor3.gg/*"];
-const rows = [...document.querySelectorAll("li[data-id]")];
+
+// One row per helper: name, what it does, its switch and its shortcut.
+const list = document.getElementById("helpers");
+for (const h of globalThis.__cor3Helpers) {
+  const li = document.createElement("li");
+  li.dataset.id = h.id;
+  const txt = document.createElement("div");
+  txt.className = "txt";
+  const name = document.createElement("div");
+  name.className = "name";
+  name.textContent = h.name;
+  const desc = document.createElement("div");
+  desc.className = "desc";
+  desc.textContent = h.desc;
+  txt.append(name, desc);
+  const ctl = document.createElement("div");
+  ctl.className = "ctl";
+  const sw = document.createElement("button");
+  sw.className = "sw";
+  sw.setAttribute("role", "switch");
+  sw.setAttribute("aria-label", h.name.replace("&", "and"));
+  const kbd = document.createElement("kbd");
+  kbd.textContent = "Alt+" + h.key;
+  ctl.append(sw, kbd);
+  li.append(txt, ctl);
+  list.append(li);
+}
+const rows = [...list.children];
 const hint = document.getElementById("hint");
 
 async function cor3Tabs() {

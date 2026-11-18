@@ -34,29 +34,15 @@
 </head>
 <body>
 <header>
-  <img src="icons/icon-48.png" alt="">
+  <img src="../icons/icon-48.png" alt="">
   <b>COR3 COMPANION</b>
   <span id="version"></span>
 </header>
-<ul>
-  <li data-id="icewall"><div class="txt"><div class="name">ICE WALL Break</div>
-    <div class="desc">Outlines where the target pattern can still fit.</div></div>
-    <div class="ctl"><button class="sw" role="switch" aria-label="ICE WALL Break"></button><kbd>Alt+H</kbd></div></li>
-  <li data-id="jobs"><div class="txt"><div class="name">Job tracker</div>
-    <div class="desc">Panel with your taken jobs, to-dos, server access, maintenance and defence.</div></div>
-    <div class="ctl"><button class="sw" role="switch" aria-label="Job tracker"></button><kbd>Alt+J</kbd></div></li>
-  <li data-id="loadout"><div class="txt"><div class="name">Loadout &amp; market</div>
-    <div class="desc">Shows what programs and hardware do to your setup, and the best upgrade.</div></div>
-    <div class="ctl"><button class="sw" role="switch" aria-label="Loadout and market"></button><kbd>Alt+L</kbd></div></li>
-  <li data-id="expeditions"><div class="txt"><div class="name">Expeditions</div>
-    <div class="desc">Exact risk and rewards in the game's popup when you hover a choice.</div></div>
-    <div class="ctl"><button class="sw" role="switch" aria-label="Expeditions"></button><kbd>Alt+E</kbd></div></li>
-  <li data-id="topbar"><div class="txt"><div class="name">Top bar</div>
-    <div class="desc">Thin strip in the game: jobs ready, next deadline, open decisions, helper switches.</div></div>
-    <div class="ctl"><button class="sw" role="switch" aria-label="Top bar"></button><kbd>Alt+B</kbd></div></li>
-</ul>
+<!-- One row per helper, made by popup.js from shared/helpers-list.js. -->
+<ul id="helpers"></ul>
 <footer><span id="hint">Switch a helper here or with its shortcut while cor3.gg is open.</span>
   <a href="https://github.com/nvanderwaal/cor3-companion#readme" target="_blank" rel="noopener">Help</a></footer>
+<script src="../shared/helpers-list.js"></script>
 <script src="popup.js"></script>
 <script src="update-check.js"></script>
 </body>

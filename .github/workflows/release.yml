@@ -51,7 +51,7 @@ jobs:
       - name: Bump version
         id: version
         run: |
-          VERSION=$(node bump.mjs "${{ github.event.inputs.bump || 'patch' }}")
+          VERSION=$(node scripts/bump.mjs "${{ github.event.inputs.bump || 'patch' }}")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Releasing $VERSION"
 
@@ -63,7 +63,7 @@ jobs:
           FIREFOX_UPDATE_URL: https://github.com/${{ github.repository }}/releases/latest/download/updates.json
         run: |
           rm -rf web-ext-artifacts
-          node sign.mjs
+          node scripts/sign.mjs
 
       - name: Collect release files
         env:
@@ -72,7 +72,7 @@ jobs:
           mkdir release
           cp web-ext-artifacts/*.xpi release/cor3-companion-firefox.xpi
           cp dist/cor3-companion-chrome.zip release/cor3-companion-chrome.zip
-          ID=$(node -p "require('./manifest.json').browser_specific_settings.gecko.id")
+          ID=$(node -p "require('./src/manifest.json').browser_specific_settings.gecko.id")
           LINK="https://github.com/${{ github.repository }}/releases/download/v$VERSION/cor3-companion-firefox.xpi"
           node -e '
             const [id, version, link] = process.argv.slice(1);
@@ -87,7 +87,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add manifest.json
+          git add src/manifest.json
           git commit -m "Release v$VERSION"
           git tag "v$VERSION"
           # Pushes made with GITHUB_TOKEN don't start this workflow again.

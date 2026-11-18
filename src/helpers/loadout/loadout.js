@@ -5,9 +5,10 @@
 // - Market: on hardware and software cards, how the item would change your
 //   current loadout, with a star on the best upgrade.
 // Reads the loadout and market data the game already receives (through the
-// websocket hook in jobs.js) and React props; it never sends anything.
+// websocket hook in shared/socket.js) and React props; it never sends anything.
 (() => {
   "use strict";
+  const { esc, findProps, load, save: store } = window.__cor3;
 
   // ---------- game model (mirrors the game's loadout code) ----------
   const RES = [
@@ -36,7 +37,8 @@
   // For these a higher number is worse.
   const LOWER_IS_BETTER = new Set(["cpuConsuming", "gpuConsuming"]);
 
-  const GREEN = "#5df0a0", RED = "#ff8a70", YELLOW = "#ffc857", GREY = "#7f9aa3", CYAN = "#76c1d1";
+  const { GREEN, RED, GREY, CYAN } = window.__cor3.color;
+  const YELLOW = "#ffc857";
   const EPS = 1e-9;
 
   // Requirement arrays are [min, max] or [base, min, max]; same as the game.
@@ -48,7 +50,6 @@
   const fmt = (x) => String(parseFloat(num(x).toFixed(2)));
   const signed = (x, f = fmt) => (x > 0 ? "+" : x < 0 ? "−" : "±") + f(Math.abs(x));
   const pw = (x) => String(Math.round(num(x) * 10) / 10); // program power, 1 decimal
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const norm = (s) => String(s ?? "").trim().toLowerCase();
 
   const abilitiesOf = (sw) => (sw?.specs || [])
@@ -100,9 +101,8 @@
 
   // ---------- captured data ----------
   const STORE_KEY = "cor3-loadout-helper";
-  const state = { enabled: true, loadout: null };
-  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (_) {}
-  const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {} };
+  const state = load(STORE_KEY, { enabled: true, loadout: null });
+  const save = () => store(STORE_KEY, state);
   const lots = new Map(); // lowercase item name -> raw market lot
   window.__cor3Loadout = { state, lots };
 
@@ -133,7 +133,7 @@
       if (v && typeof v === "object") scan(v, depth + 1);
     }
   }
-  (window.__cor3PacketListeners = window.__cor3PacketListeners || []).push(scan);
+  window.__cor3.onPacket(scan);
 
   // ---------- scenarios ----------
   // A scenario is a loadout: supply, demand and the installed programs.
@@ -286,19 +286,6 @@
       else anchor.appendChild(el);
     }
     if (el.innerHTML !== html) el.innerHTML = html;
-  }
-
-  function fiberOf(el) {
-    const key = Object.keys(el).find((k) => k.startsWith("__reactFiber$"));
-    return key ? el[key] : null;
-  }
-  function findProps(el, test, maxDepth = 8) {
-    let f = fiberOf(el);
-    for (let i = 0; f && i < maxDepth; i++, f = f.return) {
-      const p = f.memoizedProps;
-      if (p && typeof p === "object") { const hit = test(p); if (hit) return hit; }
-    }
-    return null;
   }
 
   // Marks the best entry per group with a star (gain > 0 only).
@@ -477,14 +464,10 @@
   }
 
   // Alt+L or the toolbar menu toggles the helper.
-  function setEnabled(on) {
+  window.__cor3.helper("loadout", () => state.enabled, (on) => {
     state.enabled = on;
     save();
     if (!state.enabled) clearAll(); else tick();
-  }
-  (window.__cor3Toggles = window.__cor3Toggles || {}).loadout = { get: () => state.enabled, set: setEnabled };
-  window.addEventListener("keydown", (e) => {
-    if (e.altKey && e.key.toLowerCase() === "l") setEnabled(!state.enabled);
   });
 
   setInterval(() => {

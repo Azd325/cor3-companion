@@ -3,38 +3,23 @@
 //   "Rewards" it writes HIGHER / LOWER / SAME (or MORE / LESS) in the right colour
 //   (the game colours "risk up" green), and adds a one-line verdict.
 // - With the expedition data the game sends (read through the websocket hook in
-//   jobs.js) it adds the exact numbers: Risk HIGHER +8, the mission risk after
+//   shared/socket.js) it adds the exact numbers: Risk HIGHER +8, the mission risk after
 //   the choice, and the time left to decide.
 // - Adds the exact risk score (0-100) next to LOW / MODERATE / HIGH.
+// - Shows death and fail chance on the mercenary cards once the game has priced
+//   that mercenary.
 // Alt+E or the toolbar menu toggles it. Reads only; never sends anything.
 (() => {
   "use strict";
 
   const SCORE_CLASS = "cor3-exp-score";
-  const GREEN = "#5df0a0", RED = "#ff8a70", GREY = "#7f9aa3";
-
-  function fiberOf(el) {
-    const key = Object.keys(el).find((k) => k.startsWith("__reactFiber$"));
-    return key ? el[key] : null;
-  }
-
-  // Walk up the fiber tree until test(props) matches.
-  function findProps(el, test, maxDepth = 25) {
-    let f = fiberOf(el);
-    for (let i = 0; f && i < maxDepth; i++, f = f.return) {
-      const p = f.memoizedProps;
-      if (p && typeof p === "object") {
-        const hit = test(p);
-        if (hit) return hit;
-      }
-    }
-    return null;
-  }
+  const { findProps, load, save } = window.__cor3;
+  const { GREEN, RED, GREY } = window.__cor3.color;
 
   const AMBER = "#ffc966";
   const OPTIONS_SEL = '[data-component-name="ExpeditionsEventButtons"]';
   const WORD_CLASS = "cor3-exp-word", VERDICT_CLASS = "cor3-exp-verdict";
-  const MINE = `.${WORD_CLASS}, .${VERDICT_CLASS}, .${SCORE_CLASS}`;
+  const MINE = `.${WORD_CLASS}, .${VERDICT_CLASS}, .${SCORE_CLASS}, .cor3-exp-odds`;
 
   const RISK_WORD = { up: ["HIGHER", RED], down: ["LOWER", GREEN], no_change: ["SAME", GREY] };
   const LOOT_WORD = { up: ["MORE", GREEN], down: ["LESS", RED], no_change: ["SAME", GREY] };
@@ -57,27 +42,27 @@
 
   // ---------- on/off ----------
   const STORE_KEY = "cor3-expeditions-helper";
-  const state = { enabled: true };
-  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (_) {}
-  function setEnabled(on) {
+  const state = load(STORE_KEY, { enabled: true });
+  window.__cor3.helper("expeditions", () => state.enabled, (on) => {
     state.enabled = on;
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {}
+    save(STORE_KEY, state);
     if (!on) for (const el of document.querySelectorAll(MINE)) el.remove();
     else run();
-  }
-  (window.__cor3Toggles = window.__cor3Toggles || {}).expeditions = { get: () => state.enabled, set: setEnabled };
-  window.addEventListener("keydown", (e) => {
-    if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "e") {
-      e.preventDefault();
-      setEnabled(!state.enabled);
-    }
   });
 
   // ---------- decisions from the websocket ----------
   // Each decision message carries its options with numeric riskModifier and
   // lootModifier; the expedition carries the mission's riskScore.
   const decisions = new Map(); // message id -> { options, deadline, isResolved, riskScore }
-  window.__cor3Expeditions = { decisions };
+  // Expeditions with their status and end time, for the top bar.
+  const expeditions = new Map(); // expedition id -> { status, endTime, opened }
+  window.__cor3Expeditions = { decisions, expeditions };
+
+  function keepExpedition(exp) {
+    if (exp.id == null || typeof exp.status !== "string" || !("endTime" in exp)) return;
+    if (!("riskScore" in exp) && !("mercenary" in exp)) return;
+    expeditions.set(String(exp.id), { status: exp.status, endTime: exp.endTime, opened: !!exp.containerOpenedAt });
+  }
 
   function keepDecision(msg, exp) {
     if (!msg || msg.id == null || !Array.isArray(msg.decisionOptions)) return;
@@ -90,10 +75,28 @@
     });
   }
 
+  // Mercenary odds: the game's reply when you set up an expedition carries
+  // outcomeChances (death and fail-but-survive chance) for that mercenary.
+  const odds = new Map(); // mercenary id -> { death, fail, cost, risk }
+  let lastOdds = null;
+  function keepOdds(node) {
+    const oc = node.outcomeChances;
+    if (!oc || typeof oc !== "object" || typeof oc.deathChance !== "number") return;
+    const o = { death: oc.deathChance, fail: typeof oc.failureSurviveChance === "number" ? oc.failureSurviveChance : null,
+                cost: typeof node.totalCost === "number" ? node.totalCost : null,
+                risk: typeof node.riskScore === "number" ? node.riskScore : null };
+    const id = node.mercenaryId ?? node.mercenary?.id ?? null;
+    if (id != null) odds.set(String(id), o);
+    lastOdds = o;
+  }
+  window.__cor3Expeditions.odds = odds;
+
   function scan(node, depth) {
     if (!node || typeof node !== "object" || depth > 8) return;
     if (node instanceof Uint8Array || node instanceof Date) return;
     if (Array.isArray(node)) { for (const x of node) scan(x, depth + 1); return; }
+    keepExpedition(node);
+    keepOdds(node);
     if (Array.isArray(node.messages)) for (const m of node.messages) keepDecision(m, node);
     else if (Array.isArray(node.decisionOptions)) keepDecision(node, null);
     for (const k in node) {
@@ -101,7 +104,7 @@
       if (v && typeof v === "object" && k !== "messages") scan(v, depth + 1);
     }
   }
-  (window.__cor3PacketListeners = window.__cor3PacketListeners || []).push(scan);
+  window.__cor3.onPacket(scan);
 
   const normText = (x) => String(x ?? "").trim().toLowerCase();
   const isOpen = (d) => !d.isResolved && !(Date.parse(d.deadline) < Date.now());
@@ -284,7 +287,9 @@
       const hit = missionRiskScore(value);
       let span = value.querySelector(`:scope > .${SCORE_CLASS}`);
       if (!hit) { if (span) span.remove(); continue; }
-      const label = ` (${Math.round(hit.score)})`;
+      // In the setup, add the odds for the mercenary the game just priced.
+      const o = lastOdds && lastOdds.risk != null && Math.round(lastOdds.risk) === Math.round(hit.score) ? lastOdds : null;
+      const label = ` (${Math.round(hit.score)})${o ? ` \u00b7 death ${pct(o.death)}` : ""}`;
       if (!span) {
         span = document.createElement("span");
         span.className = SCORE_CLASS;
@@ -294,12 +299,47 @@
     }
   }
 
+  // Odds on the game's mercenary cards.
+  const ODDS_CLASS = "cor3-exp-odds";
+  const pct = (n) => `${Math.round(n * 10) / 10}%`;
+  function mercOf(el) {
+    return findProps(el, (p) => {
+      const m = p.mercenary && typeof p.mercenary === "object" ? p.mercenary : p;
+      return m && m.id != null && typeof m.callsign === "string" ? m : null;
+    }, 6);
+  }
+  function annotateMercs() {
+    if (!odds.size) return;
+    const cards = new Map(); // merc id -> outermost element
+    for (const el of document.querySelectorAll('[data-component-name*="ercenar"]')) {
+      if (el.closest(`.${ODDS_CLASS}`)) continue;
+      const m = mercOf(el);
+      if (!m || !odds.has(String(m.id))) continue;
+      const had = cards.get(String(m.id));
+      if (!had || el.contains(had)) cards.set(String(m.id), el);
+    }
+    for (const [id, el] of cards) {
+      const o = odds.get(id);
+      const text = `Death ${pct(o.death)}${o.fail != null ? ` \u00b7 Fail, survives ${pct(o.fail)}` : ""}`;
+      let line = el.querySelector(`:scope > .${ODDS_CLASS}`);
+      if (!line) {
+        line = document.createElement("div");
+        line.className = ODDS_CLASS;
+        line.style.cssText = "font-size:11px;font-weight:700;margin-top:4px";
+        el.appendChild(line);
+      }
+      if (line.textContent !== text) line.textContent = text;
+      line.style.color = o.death >= 10 ? RED : AMBER;
+      line.title = "chance this mercenary dies, or fails and comes back";
+    }
+  }
+
   // The popup only lives while hovering, so react to DOM changes, not a timer.
   let queued = false;
   function run() {
     queued = false;
     if (!state.enabled) return;
-    try { annotatePopups(); annotateRiskScore(); }
+    try { annotatePopups(); annotateRiskScore(); annotateMercs(); }
     catch (e) { console.warn("[expeditions helper]", e); }
   };
   new MutationObserver(() => {

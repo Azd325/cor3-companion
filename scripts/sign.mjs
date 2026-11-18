@@ -1,5 +1,5 @@
 // Builds the extension and signs the Firefox package with Mozilla (unlisted).
-//   node sign.mjs
+//   node scripts/sign.mjs
 // Reads WEB_EXT_API_KEY and WEB_EXT_API_SECRET from .env (see .env.example).
 // The signed .xpi lands in web-ext-artifacts/.
 import { existsSync, readFileSync } from "node:fs";
@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = dirname(fileURLToPath(import.meta.url));
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const envFile = join(root, ".env");
 
 // Locally the keys come from .env; in GitHub Actions they come from repo secrets.
@@ -19,8 +19,8 @@ for (const k of ["WEB_EXT_API_KEY", "WEB_EXT_API_SECRET"]) {
   }
 }
 
-const version = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8")).version;
-console.log(`Signing version ${version}. Each version can be signed only once; bump "version" in manifest.json for a new one.`);
+const version = JSON.parse(readFileSync(join(root, "src", "manifest.json"), "utf8")).version;
+console.log(`Signing version ${version}. Each version can be signed only once; bump "version" in src/manifest.json for a new one.`);
 
 const run = (cmd, args) => {
   // shell is needed on Windows to find npx; arguments here are fixed, not user input.
@@ -28,7 +28,7 @@ const run = (cmd, args) => {
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 
-run("node", ["build.mjs"]);
+run("node", ["scripts/build.mjs"]);
 // web-ext reads the API key and secret from the WEB_EXT_* environment variables.
 run("npx", ["--yes", "web-ext@8", "sign", "--source-dir", "dist/firefox", "--channel", "unlisted",
   "--artifacts-dir", "web-ext-artifacts"]);

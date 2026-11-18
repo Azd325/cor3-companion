@@ -5,87 +5,9 @@
 (() => {
   "use strict";
 
-  // ---------- msgpack decoder (socket.io-msgpack-parser / notepack format) ----------
-  function decodeMsgpack(buf) {
-    const view = new DataView(buf);
-    const bytes = new Uint8Array(buf);
-    const td = new TextDecoder();
-    let off = 0;
-    const str = (n) => { const s = td.decode(bytes.subarray(off, off + n)); off += n; return s; };
-    const bin = (n) => { const b = bytes.slice(off, off + n); off += n; return b; };
-    const arr = (n) => { const a = new Array(n); for (let i = 0; i < n; i++) a[i] = read(); return a; };
-    const map = (n) => { const o = {}; for (let i = 0; i < n; i++) { const k = read(); o[k] = read(); } return o; };
-    // Extension types as notepack.io writes them: undefined, dates, timestamps.
-    const ext = (n) => {
-      const type = view.getInt8(off); off++;
-      let d;
-      if (type === 0 && n === 1) { off += 1; return undefined; }
-      if (type === 0 && n === 8) { d = new Date(view.getInt32(off) * 2 ** 32 + view.getUint32(off + 4)); off += 8; return d; }
-      if (type === -1 && n === 4) { d = new Date(view.getUint32(off) * 1e3); off += 4; return d; }
-      if (type === -1 && n === 8) {
-        const hi = view.getUint32(off), lo = view.getUint32(off + 4); off += 8;
-        return new Date(((hi & 3) * 2 ** 32 + lo) * 1e3 + (hi >>> 2) / 1e6);
-      }
-      if (type === -1 && n === 12) {
-        const ns = view.getUint32(off), s = Number(view.getBigInt64(off + 4)); off += 12;
-        return new Date(s * 1e3 + ns / 1e6);
-      }
-      return bin(n);
-    };
-    function read() {
-      const b = bytes[off++];
-      if (b < 0x80) return b;
-      if (b < 0x90) return map(b & 0x0f);
-      if (b < 0xa0) return arr(b & 0x0f);
-      if (b < 0xc0) return str(b & 0x1f);
-      if (b >= 0xe0) return b - 0x100;
-      let v;
-      switch (b) {
-        case 0xc0: return null;
-        case 0xc2: return false;
-        case 0xc3: return true;
-        case 0xc4: v = view.getUint8(off); off += 1; return bin(v);
-        case 0xc5: v = view.getUint16(off); off += 2; return bin(v);
-        case 0xc6: v = view.getUint32(off); off += 4; return bin(v);
-        case 0xc7: v = view.getUint8(off); off += 1; return ext(v);
-        case 0xc8: v = view.getUint16(off); off += 2; return ext(v);
-        case 0xc9: v = view.getUint32(off); off += 4; return ext(v);
-        case 0xca: v = view.getFloat32(off); off += 4; return v;
-        case 0xcb: v = view.getFloat64(off); off += 8; return v;
-        case 0xcc: v = view.getUint8(off); off += 1; return v;
-        case 0xcd: v = view.getUint16(off); off += 2; return v;
-        case 0xce: v = view.getUint32(off); off += 4; return v;
-        case 0xcf: v = Number(view.getBigUint64(off)); off += 8; return v;
-        case 0xd0: v = view.getInt8(off); off += 1; return v;
-        case 0xd1: v = view.getInt16(off); off += 2; return v;
-        case 0xd2: v = view.getInt32(off); off += 4; return v;
-        case 0xd3: v = Number(view.getBigInt64(off)); off += 8; return v;
-        case 0xd4: return ext(1);
-        case 0xd5: return ext(2);
-        case 0xd6: return ext(4);
-        case 0xd7: return ext(8);
-        case 0xd8: return ext(16);
-        case 0xd9: v = view.getUint8(off); off += 1; return str(v);
-        case 0xda: v = view.getUint16(off); off += 2; return str(v);
-        case 0xdb: v = view.getUint32(off); off += 4; return str(v);
-        case 0xdc: v = view.getUint16(off); off += 2; return arr(v);
-        case 0xdd: v = view.getUint32(off); off += 4; return arr(v);
-        case 0xde: v = view.getUint16(off); off += 2; return map(v);
-        case 0xdf: v = view.getUint32(off); off += 4; return map(v);
-      }
-      throw new Error("msgpack: unknown byte 0x" + b.toString(16));
-    }
-    return read();
-  }
+  const { esc, toMs, load, save: store, shadowHost } = window.__cor3;
 
   // ---------- times ----------
-  // Game times arrive as Date (msgpack) or ISO strings (JSON / localStorage).
-  function toMs(v) {
-    if (v instanceof Date) return v.getTime();
-    if (typeof v === "string") { const t = Date.parse(v); return Number.isFinite(t) ? t : NaN; }
-    if (typeof v === "number" && v > 1e12) return v;
-    return NaN;
-  }
   // "2h 05m", "12m", "40s"; null when the time is unknown or past.
   function shortLeft(v) {
     const ms = toMs(v) - Date.now();
@@ -98,12 +20,11 @@
 
   // ---------- state ----------
   const STORE_KEY = "cor3-job-tracker";
-  const state = { jobs: {}, servers: {}, checks: {}, panel: { x: 20, y: 80, open: true, min: false } };
-  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (_) {}
+  const state = load(STORE_KEY, { jobs: {}, servers: {}, checks: {}, panel: { x: 20, y: 80, open: true, min: false } });
   // Raw copies of the last job lists, for checking in the console (window.__cor3JobTracker).
   const debug = { lastJobs: null, lastRecentJobs: null };
   window.__cor3JobTracker = { debug, state };
-  const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {} };
+  const save = () => store(STORE_KEY, state);
 
   const isJob = (o) => o && typeof o === "object" && ["TAKEN", "COMPLETED", "FAILED"].includes(o.status) &&
     ("conditions" in o || "relatedServers" in o) && o.id != null;
@@ -153,6 +74,21 @@
       state.market = { ...(state.market || {}), resetAt: node.nextJobsResetAt };
       changed = true;
     }
+    // The network map's links between servers, for working out routes.
+    if (Array.isArray(node.servers) && Array.isArray(node.connections)) {
+      const ip = {};
+      let home = null;
+      for (const s of node.servers) {
+        if (!s || s.id == null || typeof s.serverIp !== "string") continue;
+        ip[s.id] = s.serverIp;
+        if (s.serverTypeName === "Home" || s.serverName === "Home Server") home = s.serverIp;
+      }
+      const links = [];
+      for (const c of node.connections) {
+        if (c && ip[c.serverA] && ip[c.serverB]) links.push([ip[c.serverA], ip[c.serverB]]);
+      }
+      if (home && links.length) { state.net = { home, links, at: Date.now() }; changed = true; }
+    }
     if (Array.isArray(node.jobs)) {
       // Offers in the market's job tab (not taken yet).
       state.market = { ...(state.market || {}), offers: node.jobs.length, at: Date.now() };
@@ -201,42 +137,12 @@
     }
     return changed;
   }
-
-  // Other helpers (loadout.js) read the same decoded packets through this list,
-  // so the websocket is hooked only once.
-  const packetListeners = (window.__cor3PacketListeners = window.__cor3PacketListeners || []);
-
-  function onPacket(data) {
+  // Every decoded websocket packet (shared/socket.js).
+  window.__cor3.onPacket((data) => {
     try {
       if (scan(data, 0)) { save(); render(); }
     } catch (e) { console.warn("[job tracker]", e); }
-    for (const fn of packetListeners) {
-      try { fn(data); } catch (e) { console.warn("[cor3 helper]", e); }
-    }
-  }
-
-  // ---------- websocket hook ----------
-  const NativeWS = window.WebSocket;
-  function handleFrame(ev) {
-    const d = ev.data;
-    if (d instanceof ArrayBuffer) {
-      try { onPacket(decodeMsgpack(d)); } catch (_) {}
-    } else if (typeof Blob !== "undefined" && d instanceof Blob) {
-      d.arrayBuffer().then((b) => { try { onPacket(decodeMsgpack(b)); } catch (_) {} });
-    } else if (typeof d === "string" && d.length > 2 && d[0] === "4") {
-      // Plain socket.io text frame fallback: 42["event",{...}]
-      const i = d.indexOf("[");
-      if (i > 0) { try { onPacket(JSON.parse(d.slice(i))); } catch (_) {} }
-    }
-  }
-  function HookedWS(...args) {
-    const ws = new NativeWS(...args);
-    try { ws.addEventListener("message", handleFrame); } catch (_) {}
-    return ws;
-  }
-  HookedWS.prototype = NativeWS.prototype;
-  for (const k of ["CONNECTING", "OPEN", "CLOSING", "CLOSED"]) HookedWS[k] = NativeWS[k];
-  window.WebSocket = HookedWS;
+  });
 
   // ---------- panel ----------
   const CSS = `
@@ -265,6 +171,8 @@
     label.chk span { text-decoration: line-through; opacity: .6; }
     .srv { display: flex; flex-wrap: wrap; gap: 3px 6px; align-items: center; }
     .srv .ip { flex: 1 1 150px; word-break: break-all; }
+    .route { color: #7f9aa3; font-size: 10px; margin: 0 0 2px 8px; word-break: break-all; }
+    .route .hop { color: #ffa040; }
     .empty { color: #7f9aa3; padding: 8px 0; }
     .desc { color: #9fb6bd; margin-top: 2px; }
   `;
@@ -273,18 +181,7 @@
   function ensurePanel() {
     if (panel && document.documentElement.contains(host)) return true;
     if (!document.body) return false;
-    host = document.createElement("div");
-    host.id = "cor3-job-tracker-host";
-    root = host.attachShadow({ mode: "open" });
-    try {
-      const sheet = new CSSStyleSheet();
-      sheet.replaceSync(CSS);
-      root.adoptedStyleSheets = [sheet];
-    } catch (_) {
-      const st = document.createElement("style");
-      st.textContent = CSS;
-      root.appendChild(st);
-    }
+    ({ host, root } = shadowHost("cor3-job-tracker-host", CSS));
     panel = document.createElement("div");
     panel.className = "p";
     lastHtml = "";
@@ -325,8 +222,6 @@
     });
     return true;
   }
-
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   function timeLeft(job) {
     if (!job.endTime) return "";
@@ -397,15 +292,113 @@
     return out;
   }
 
+  // ---------- routes ----------
+  // A server you don't have access to is still within reach when there is a
+  // way to it from Home through servers you can pass: ones you have access to,
+  // or ones your HACK power beats, and none in maintenance. Fewer hacks win,
+  // then fewer hops.
+  const inMaint = (s) => s.isInMaintenance && !(toMs(s.maintenanceEndsAt) <= Date.now());
+  function canHack(s, hack) {
+    const def = s.serverDefenceRate;
+    if (typeof def !== "number" || def <= 0) return true;
+    return hack == null ? null : hack >= def;
+  }
+  function neighbours() {
+    const adj = {};
+    for (const [a, b] of state.net?.links || []) {
+      (adj[a] = adj[a] || []).push(b);
+      (adj[b] = adj[b] || []).push(a);
+    }
+    return adj;
+  }
+  // Cheapest route from Home to target (IPs, Home and target included), or
+  // null. With pass = () => true it finds the shortest route of all.
+  function cheapest(target, adj, pass) {
+    const home = state.net.home;
+    const dist = { [home]: 0 }, prev = {}, done = new Set();
+    for (;;) {
+      let cur = null;
+      for (const k in dist) if (!done.has(k) && (cur == null || dist[k] < dist[cur])) cur = k;
+      if (cur == null) return null;
+      if (cur === target) break;
+      done.add(cur);
+      for (const nb of adj[cur] || []) {
+        if (done.has(nb)) continue;
+        const cost = nb === target ? 1 : pass(nb);
+        if (cost == null) continue;
+        if (dist[nb] == null || dist[cur] + cost < dist[nb]) { dist[nb] = dist[cur] + cost; prev[nb] = cur; }
+      }
+    }
+    const path = [target];
+    while (path[0] !== home) path.unshift(prev[path[0]]);
+    return path;
+  }
+
+  // Can you get into this server now, keeping the route in mind?
+  // { ok: true | false | null (don't know yet), cls, text, tip, route }
+  function reach(s) {
+    if (!s) return { ok: null, cls: "", text: "? unknown", tip: "open the network map so the tracker can see this server" };
+    if (inMaint(s)) return { ok: false, cls: "warn", text: "", tip: "in maintenance" };
+    if (s.hasAdminAccess) return { ok: true, cls: "ok", text: "admin", tip: "admin access" };
+    if (s.isAccessible) return { ok: true, cls: "ok", text: "access", tip: "access" };
+    const hack = hackPower();
+    const target = canHack(s, hack);
+    const hackTip = target == null ? "open your Loadout to compare its defence with your HACK power" : "";
+    if (!state.net?.home || !state.servers[state.net.home]) {
+      // No links known yet: fall back to what the game says.
+      return s.isReachable
+        ? { ok: target, cls: "bad", text: "no access", tip: "no access" }
+        : { ok: null, cls: "bad", text: "unreachable", tip: "unreachable; open the network map to work out a route" };
+    }
+    const adj = neighbours();
+    let unsure = false;
+    const route = cheapest(s.serverIp, adj, (ip) => {
+      const h = state.servers[ip];
+      if (!h || inMaint(h)) return null;
+      if (h.isAccessible || ip === state.net.home) return 1;
+      const c = canHack(h, hack);
+      if (c === false) return null;
+      if (c == null) unsure = true;
+      return 10; // a hack on the way
+    });
+    if (!route) {
+      // Name the first server that blocks the shortest route.
+      const any = cheapest(s.serverIp, adj, () => 1);
+      let why = "no route from Home on your network map";
+      for (const ip of (any || []).slice(1, -1)) {
+        const h = state.servers[ip];
+        if (!h) continue;
+        if (inMaint(h)) { const l = shortLeft(h.maintenanceEndsAt); why = `${h.serverName || ip} is in maintenance${l ? ` (${l} left)` : ""}`; break; }
+        if (canHack(h, hack) === false && !h.isAccessible) { why = `${h.serverName || ip} defence ${h.serverDefenceRate} is above your HACK ${hack}`; break; }
+      }
+      return { ok: false, cls: "bad", text: "no route", tip: why };
+    }
+    const hops = route.slice(1, -1).filter((ip) => !state.servers[ip]?.isAccessible && ip !== state.net.home);
+    const ok = target === false ? false : unsure || target == null ? null : true;
+    const text = s.isReachable || !hops.length ? "no access" : `via ${hops.length} hack${hops.length > 1 ? "s" : ""}`;
+    const tip = (hops.length ? `hack on the way: ${hops.map((ip) => state.servers[ip]?.serverName || ip).join(", ")}` : "reachable, no access yet") +
+      (hackTip ? `; ${hackTip}` : "");
+    return { ok, cls: ok === false ? "bad" : "warn", text, tip, route };
+  }
+
+  // The route as a short line, e.g. "Home → RM7-S4L2 → 10.0.0.7", with servers
+  // you still have to hack in orange.
+  function routeLine(route) {
+    return route.map((ip, i) => {
+      const s = state.servers[ip] || {};
+      const name = esc(i === 0 ? "Home" : s.serverName || ip);
+      return i && i < route.length - 1 && !s.isAccessible ? `<span class="hop">${name}</span>` : name;
+    }).join(" &rarr; ");
+  }
+
+  window.__cor3JobTracker.reach = (ip) => reach(state.servers[ip]);
+
   function accessBadge(rs) {
     const s = findServer(rs);
-    if (!s) return `<span class="badge" title="Open the network map so the tracker can see this server">? unknown</span>`;
+    const r = reach(s);
+    if (!s) return `<span class="badge" title="${esc(r.tip)}">${r.text}</span>`;
     const extra = serverInfo(s).map((i) => `<span class="badge ${i.cls}" title="${esc(i.tip)}">${i.text}</span>`).join("");
-    if (s.isInMaintenance) return extra;
-    if (s.hasAdminAccess) return `<span class="badge ok">admin</span>${extra}`;
-    if (s.isAccessible) return `<span class="badge ok">access</span>${extra}`;
-    if (s.isReachable) return `<span class="badge bad">no access</span>${extra}`;
-    return `<span class="badge bad">unreachable</span>${extra}`;
+    return (r.text ? `<span class="badge ${r.cls}" title="${esc(r.tip)}">${r.text}</span>` : "") + extra;
   }
 
   function render() {
@@ -455,6 +448,8 @@
           html += `<div class="sec">Servers</div>`;
           for (const rs of servers) {
             html += `<div class="srv"><span class="ip">${esc(rs.serverName ?? "")}${rs.serverName && rs.serverIp ? " &middot; " : ""}${esc(rs.serverIp ?? "")}</span>${accessBadge(rs)}</div>`;
+            const r = reach(findServer(rs));
+            if (r.route && r.route.length > 2 && r.text !== "no access") html += `<div class="route">${routeLine(r.route)}</div>`;
           }
         }
         html += `</div>`;
@@ -487,16 +482,13 @@
   }
 
   // Alt+J or the toolbar menu shows or hides the panel.
-  const setOpen = (on) => { state.panel.open = on; save(); render(); };
-  (window.__cor3Toggles = window.__cor3Toggles || {}).jobs = { get: () => state.panel.open, set: setOpen };
-  window.addEventListener("keydown", (e) => {
-    if (e.altKey && e.key.toLowerCase() === "j") setOpen(!state.panel.open);
-  });
+  window.__cor3.helper("jobs", () => state.panel.open, (on) => { state.panel.open = on; save(); render(); });
 
   // ---------- access marks on the market's job cards ----------
   // The cards only show server names as text ("Servers - RM7-S4L2, 10.0.0.7"),
   // so match each name/IP against the servers seen on the network map.
   const MARK_CLASS = "cor3-jt-mark";
+  const { GREEN, RED } = window.__cor3.color;
   const SERVER_TEXT = [
     '[data-component-name="JobCardCollapsedText"]',
     '[data-component-name="JobCardExpandedInfoValue"]',
@@ -542,38 +534,43 @@
     return out;
   }
 
-  function markFor(s) {
-    if (!s) return null;
-    const m = s.isInMaintenance ? { ch: "&#9888;", color: "#ffa040", tip: "" }
-      : s.hasAdminAccess ? { ch: "&#10003;", color: "#5df0a0", tip: "admin access" }
-      : s.isAccessible ? { ch: "&#10003;", color: "#5df0a0", tip: "access" }
-      : { ch: "&#10007;", color: "#ff8a70", tip: s.isReachable ? "no access" : "unreachable" };
-    // Tooltip: maintenance times and defence, as in the panel.
-    const extra = serverInfo(s).map((i) => i.text.replace(/ &#1000[37];/, ""));
-    m.tip = [m.tip, ...extra].filter(Boolean).join(", ");
-    return m;
+  // Why a server blocks a job right now, or null when it doesn't.
+  function blocker(token) {
+    const s = lookupServer(token);
+    if (!s) return `${token}: not on your network map yet, open the map`;
+    const r = reach(s);
+    if (inMaint(s)) {
+      const l = shortLeft(s.maintenanceEndsAt);
+      return `${token}: in maintenance${l ? `, ${l} left` : ""}`;
+    }
+    if (r.ok === true) return null;
+    const def = s.serverDefenceRate, hack = hackPower();
+    if (r.ok === false && r.text !== "no route" && typeof def === "number" && hack != null && hack < def) {
+      return `${token}: defence ${def} is above your HACK ${hack}`;
+    }
+    return `${token}: ${r.tip}`;
   }
 
+  // One mark per job card: ✓ when you can do the job now (every server is
+  // yours or within reach), ✗ otherwise. Hovering it says what blocks it.
   function annotateJobCards() {
-    const known = Object.keys(state.servers).length;
     for (const { el, list } of serverLines()) {
       const tokens = list.split(",").map((t) => t.trim()).filter((t) => t && t !== "N/A");
       let mark = el.querySelector(`:scope > .${MARK_CLASS}`);
       if (!tokens.length) { if (mark) mark.remove(); continue; }
-
-      const html = tokens.map((t) => {
-        const m = markFor(lookupServer(t));
-        return m
-          ? `<span title="${esc(t)}: ${m.tip}" style="color:${m.color};font-weight:700">${m.ch}</span>`
-          : `<span title="${esc(t)}: unknown, not among the ${known} servers on your network map yet" style="color:#7f9aa3;font-weight:700">?</span>`;
-      }).join(" ");
+      const blocks = tokens.map(blocker).filter(Boolean);
+      const ok = !blocks.length;
+      const tip = ok ? "You can do this job now: every server is yours or within reach" : `Blocked by:\n${blocks.join("\n")}`;
       if (!mark) {
         mark = document.createElement("span");
         mark.className = MARK_CLASS;
-        mark.style.marginLeft = "6px";
+        mark.style.cssText = "margin-left:6px;font-weight:700;cursor:help";
         el.appendChild(mark);
       }
-      if (mark.innerHTML !== html) mark.innerHTML = html;
+      const ch = ok ? "\u2713" : "\u2717";
+      if (mark.textContent !== ch) mark.textContent = ch;
+      mark.style.color = ok ? GREEN : RED;
+      if (mark.title !== tip) mark.title = tip;
     }
   }
 

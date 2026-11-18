@@ -9,8 +9,7 @@
   const NS = "http://www.w3.org/2000/svg";
   const OVERLAY_ID = "iwb-helper-overlay";
   const STORE_KEY = "cor3-icewall-helper";
-  let enabled = true;
-  try { enabled = JSON.parse(localStorage.getItem(STORE_KEY) || "{}").enabled !== false; } catch (_) {}
+  const state = window.__cor3.load(STORE_KEY, { enabled: true });
 
   function triPoints(cell, gridHeight) {
     const a = 2 * cell.row + 1;
@@ -23,15 +22,8 @@
   }
 
   // Walk up the React fiber tree from the board <svg> to the WallBoard props.
-  function getBoardProps(svg) {
-    const key = Object.keys(svg).find((k) => k.startsWith("__reactFiber$"));
-    let fiber = key && svg[key];
-    for (let i = 0; fiber && i < 30; i++, fiber = fiber.return) {
-      const p = fiber.memoizedProps;
-      if (p && p.state && p.state.boardCells && p.state.targetPattern) return p;
-    }
-    return null;
-  }
+  const getBoardProps = (svg) => window.__cor3.findProps(svg,
+    (p) => (p.state && p.state.boardCells && p.state.targetPattern ? p : null), 30);
 
   // Same anchor rule the game uses: bottom row, prefer "up" cells, closest to centre.
   function pickAnchor(pattern) {
@@ -94,7 +86,7 @@
       svg.appendChild(g);
     }
     g.textContent = "";
-    if (!enabled || !sol || !sol.results.length) return;
+    if (!state.enabled || !sol || !sol.results.length) return;
 
     const best = sol.results[0].known;
     const top = sol.results.filter((r) => r.known === best);
@@ -136,14 +128,10 @@
   }
 
   // Alt+H or the toolbar menu toggles the overlay.
-  const setEnabled = (on) => {
-    enabled = on;
-    try { localStorage.setItem(STORE_KEY, JSON.stringify({ enabled })); } catch (_) {}
+  window.__cor3.helper("icewall", () => state.enabled, (on) => {
+    state.enabled = on;
+    window.__cor3.save(STORE_KEY, state);
     tick();
-  };
-  (window.__cor3Toggles = window.__cor3Toggles || {}).icewall = { get: () => enabled, set: setEnabled };
-  window.addEventListener("keydown", (e) => {
-    if (e.altKey && e.key.toLowerCase() === "h") setEnabled(!enabled);
   });
 
   setInterval(tick, 250);
