@@ -19,13 +19,17 @@ Browser extension for cor3.gg:
 Click the extension's icon in the toolbar for a list of the helpers with a switch for each, which turns the
 helper on or off in your open cor3.gg tabs, the same as its shortcut.
 
-<img src="docs/menu.png" alt="Toolbar menu listing the four helpers and their shortcuts" width="300">
+<img src="docs/menu.png" alt="Toolbar menu with a switch and shortcut for each of the five helpers" width="300">
 
-It only reads what the game already sends to your browser; it never sends anything itself.
+When a newer release is out, the menu shows one small line under its header with a link to it (Chrome right away,
+Firefox only if it hasn't updated itself within 2 days). It checks GitHub at most every 6 hours, only while the
+menu is open.
+
+In the game it only reads what the game already sends to your browser, and it never sends anything to the game.
 
 ## Install
 
-Download the files from the [latest release](https://github.com/nvanderwaal/cor3-helper/releases/latest).
+Download the files from the [latest release](https://github.com/nvanderwaal/cor3-companion/releases/latest).
 
 ### Firefox
 
@@ -51,7 +55,7 @@ Chrome may show a "developer mode extensions" notice at startup; that's normal f
 
 ## ICE WALL Break
 
-![ICE WALL Break board with candidate placements outlined in yellow](docs/ice-wall.png)
+<img src="docs/ice-wall.png" alt="ICE WALL Break board with candidate placements outlined in yellow" width="460">
 
 The helper tries every spot where the target pattern could fit and drops the ones that clash with a
 revealed glyph or that you already guessed wrong.
@@ -64,7 +68,7 @@ As more glyphs are revealed the yellow options shrink until one turns green.
 
 ## Job tracker
 
-![Job tracker panel with two taken File Decryption jobs and their to-do items](docs/job-tracker.png)
+<img src="docs/job-tracker.png" alt="Job tracker panel with two taken File Decryption jobs and their to-do items" width="337">
 
 A panel you can drag around, minimise or hide with Alt+J. For every job you've taken it shows:
 
@@ -121,12 +125,12 @@ It adds a short block to these cards:
 - **Market hardware**: the same, plus how the specs compare to the part you have now.
 - **Market software**: the same as programs you haven't installed, plus a note if you already own it.
 
-![Loadout page with the helper's fit check and power change on each program card](docs/loadout.png)
+<img src="docs/loadout.png" alt="Loadout page with the helper's fit check and power change on each program card" width="880">
 
 **★** marks the best upgrade among the cards on screen: per hardware category, and per ability for
 software. Only parts that boot and programs that fit can get it.
 
-![Market hardware cards with the helper's spec comparison, boot check and program power change](docs/market.png)
+<img src="docs/market.png" alt="Market hardware cards with the helper's spec comparison, boot check and program power change" width="620">
 
 The game works out program power on its server, so power for a setup you don't have yet is an
 estimate (marked ≈). For programs that are installed, the helper starts from the game's real number
@@ -134,7 +138,7 @@ and only estimates the change.
 
 ## Top bar
 
-<img src="docs/topbar.png" alt="Top bar with jobs, an open decision and the helper switches" width="600">
+<img src="docs/topbar.png" alt="Top bar with jobs, an open decision and the helper switches" width="640">
 
 A small strip at the top centre of the game. It only shows what needs you now, and leaves a part out when there's
 nothing to say:
