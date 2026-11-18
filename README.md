@@ -106,8 +106,12 @@ It adds a short block to these cards:
 - **Market hardware**: the same, plus how the specs compare to the part you have now.
 - **Market software**: the same as programs you haven't installed, plus a note if you already own it.
 
+![Loadout page with the helper's fit check and power change on each program card](docs/loadout.png)
+
 **★** marks the best upgrade among the cards on screen: per hardware category, and per ability for
 software. Only parts that boot and programs that fit can get it.
+
+![Market hardware cards with the helper's spec comparison, boot check and program power change](docs/market.png)
 
 The game works out program power on its server, so power for a setup you don't have yet is an
 estimate (marked ≈). For programs that are installed, the helper starts from the game's real number
