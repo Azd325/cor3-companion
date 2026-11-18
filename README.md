@@ -99,8 +99,6 @@ Hovering the ✗ lists what blocks it, e.g. a server in maintenance with its tim
 HACK power, no route from Home, or a server that isn't on your network map yet. Open the network map and
 your Loadout once so the tracker knows the routes and your HACK power.
 
-<img src="docs/job-cards.png" alt="Market job cards with a green check on the jobs you can do now and a red cross with the blocking server on hover" width="584">
-
 ## Expeditions
 
 When a drone event asks for a decision, hovering an option shows the game's popup with **Risk** and
@@ -124,8 +122,6 @@ When you set up an expedition, each mercenary the game has priced gets a line wi
 **Death 4% · Fail, survives 12%** (red from 10% death).
 The odds appear once you've picked that mercenary in the setup, because that's when the game sends them; the
 mission risk then also shows the death chance, e.g. **MODERATE (52) · death 4%**.
-
-<img src="docs/mercenaries.png" alt="Mercenary cards in the expedition setup with each mercenary's death and fail chance" width="646">
 
 ## Loadout & market
 
@@ -181,8 +177,6 @@ purple for epic, orange for legendary and green for quest items. Common items ke
 The price takes the same colour. A line above the items shows the total value of your
 stash and the slots used, e.g. **Stash value 48,200 cr · 34/40 slots**. Hovering a price on a stack shows
 the value of the whole stack. Alt+I turns it off and on.
-
-<img src="docs/inventory.png" alt="Inventory with a sell price on each item and borders in the rarity colours" width="550">
 
 ## Lighter screen
 
