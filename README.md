@@ -5,6 +5,8 @@
 Browser extension for cor3.gg:
 
 - **[ICE WALL Break](#ice-wall-break)**: highlights where the target pattern fits on the board (Alt+H toggles).
+- **[Protocol solver](#protocol-solver)**: the best next move in the cleaner-bot protocol minigame, with the fields
+  to change outlined (Alt+P toggles).
 - **[Job tracker](#job-tracker)**: a panel with your taken jobs, their to-do items, server access and the route to
   each server, maintenance times and defence against your HACK power (Alt+J toggles), plus a ✓ or ✗ on the
   market's job cards that says whether you can do the job now.
@@ -69,6 +71,22 @@ revealed glyph or that you already guessed wrong.
 - **Green outline + MATCH**: only one spot is left; that's the answer.
 
 As more glyphs are revealed the yellow options shrink until one turns green.
+
+## Protocol solver
+
+In the cleaner-bot protocol minigame the game hides one combination of Version, Method, Channel and Cipher and,
+after each attempt, says how many fields are wrong. The helper reads those results from the minigame's log and
+shows one line above the fields:
+
+- **NEXT v1.0 · PUT · Fiber · RSA**: the move to play now. The fields you still have to change are outlined.
+- **32 possible**: how many combinations still fit the results so far.
+- **wins 18 of 32**: only when a win is no longer certain, how many of those the best play still wins in
+  the attempts left. With 4 attempts the best play wins 55 of the 81 rounds; with 6 it always wins, in 5
+  attempts at most.
+- **ANSWER** in green: only one combination is left.
+
+You set the fields and send them yourself; the helper never presses a key. It writes what it read to the
+browser console (`[COR3 protocol]`), handy if the game changes its log.
 
 ## Job tracker
 
