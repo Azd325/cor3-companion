@@ -4,12 +4,12 @@
 
 Browser extension for cor3.gg:
 
-- **ICE WALL Break**: highlights where the target pattern fits on the board (Alt+H toggles).
-- **Job tracker**: a panel with your taken jobs, their to-do items and server access (Alt+J toggles),
+- **[ICE WALL Break](#ice-wall-break)**: highlights where the target pattern fits on the board (Alt+H toggles).
+- **[Job tracker](#job-tracker)**: a panel with your taken jobs, their to-do items and server access (Alt+J toggles),
   plus an access mark after the server names on the market's job cards.
-- **Expeditions**: makes the risk/rewards popup on decision options clear (higher/lower, more/less
+- **[Expeditions](#expeditions)**: makes the risk/rewards popup on decision options clear (higher/lower, more/less
   and a one-line verdict), and shows the exact risk score of a mission.
-- **Loadout & market**: shows what a program or hardware part would do to your setup, on the
+- **[Loadout & market](#loadout--market)**: shows what a program or hardware part would do to your setup, on the
   loadout page and on the market's cards, and stars the best upgrade (Alt+L toggles).
 
 Click the extension's icon in the toolbar for a list of the helpers and their shortcuts.
