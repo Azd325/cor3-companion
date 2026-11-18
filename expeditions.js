@@ -350,7 +350,7 @@
       if (!line) {
         line = document.createElement("div");
         line.className = ODDS_CLASS;
-        line.style.cssText = "font-size:11px;font-weight:700;margin-top:4px;white-space:nowrap";
+        line.style.cssText = "font-size:11px;font-weight:700;margin-top:4px";
         el.appendChild(line);
       }
       if (line.textContent !== text) line.textContent = text;
