@@ -70,10 +70,10 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir release
-          cp web-ext-artifacts/*.xpi release/cor3-helper-firefox.xpi
-          cp dist/cor3-helper-chrome.zip release/cor3-helper-chrome.zip
+          cp web-ext-artifacts/*.xpi release/cor3-companion-firefox.xpi
+          cp dist/cor3-companion-chrome.zip release/cor3-companion-chrome.zip
           ID=$(node -p "require('./manifest.json').browser_specific_settings.gecko.id")
-          LINK="https://github.com/${{ github.repository }}/releases/download/v$VERSION/cor3-helper-firefox.xpi"
+          LINK="https://github.com/${{ github.repository }}/releases/download/v$VERSION/cor3-companion-firefox.xpi"
           node -e '
             const [id, version, link] = process.argv.slice(1);
             const out = { addons: { [id]: { updates: [{ version, update_link: link }] } } };
@@ -99,8 +99,8 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           cat > notes.md <<'EOF'
-          **Firefox:** click `cor3-helper-firefox.xpi` to install (it updates itself after that).
-          **Chrome:** unzip `cor3-helper-chrome.zip` over your extension folder and click reload in `chrome://extensions`.
+          **Firefox:** click `cor3-companion-firefox.xpi` to install (it updates itself after that).
+          **Chrome:** unzip `cor3-companion-chrome.zip` over your extension folder and click reload in `chrome://extensions`.
 
           Find it useful? [Buy me a coffee ☕](https://buymeacoffee.com/nvanderwaal)
           EOF

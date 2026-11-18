@@ -1,4 +1,4 @@
-# <img src="icons/icon-128.png" alt="" width="40" align="center"> COR3 Helper
+# <img src="icons/icon-128.png" alt="" width="40" align="center"> COR3 Companion
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/nvanderwaal)
 
@@ -24,7 +24,7 @@ Download the files from the [latest release](https://github.com/nvanderwaal/cor3
 
 ### Firefox
 
-1. Click `cor3-helper-firefox.xpi` in the latest release.
+1. Click `cor3-companion-firefox.xpi` in the latest release.
 2. Firefox asks to install the add-on; click **Continue to Installation**, then **Add**.
 
 The add-on is signed by Mozilla, so it works in normal Firefox and stays installed.
@@ -35,7 +35,7 @@ If nothing shows up on cor3.gg, click the puzzle-piece icon in the toolbar and a
 
 ### Chrome (or Edge, Brave)
 
-1. Download `cor3-helper-chrome.zip` and unzip it into a folder you keep, e.g. `Documents\cor3-helper`.
+1. Download `cor3-companion-chrome.zip` and unzip it into a folder you keep, e.g. `Documents\cor3-companion`.
    Chrome loads the extension from that folder, so don't delete it.
 2. Open `chrome://extensions` (Edge: `edge://extensions`) and turn on **Developer mode** (top right).
 3. Click **Load unpacked** and pick that folder.
