@@ -1,0 +1,20 @@
+// The helpers, in menu order. The one list the toolbar menu, the top bar's
+// Helpers menu and the shortcuts are built from: id, name, Alt+key, and the
+// line the toolbar menu shows under the name.
+// Loaded in the page (before the helpers) and in the toolbar menu.
+globalThis.__cor3Helpers = [
+  { id: "icewall", name: "ICE WALL Break", key: "H",
+    desc: "Outlines where the target pattern can still fit." },
+  { id: "jobs", name: "Job tracker", key: "J",
+    desc: "Panel with your taken jobs, to-dos, server access and routes; ✓ or ✗ on market jobs." },
+  { id: "loadout", name: "Loadout & market", key: "L",
+    desc: "Shows what programs and hardware do to your setup, and the best upgrade." },
+  { id: "expeditions", name: "Expeditions", key: "E",
+    desc: "Exact risk and rewards on choices, and mercenary odds." },
+  { id: "inventory", name: "Inventory", key: "I",
+    desc: "Sell price on every item and a border in its rarity colour." },
+  { id: "lighter", name: "Lighter screen", key: "V",
+    desc: "Hides the moving backgrounds and the network map fog. Off by default." },
+  { id: "topbar", name: "Top bar", key: "B",
+    desc: "Thin strip in the game: jobs ready, next deadline, open decisions, helper switches." },
+];

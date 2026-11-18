@@ -7,8 +7,7 @@
   "use strict";
 
   const STORE_KEY = "cor3-lighter-screen";
-  const state = { enabled: false };
-  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (_) {}
+  const state = window.__cor3.load(STORE_KEY, { enabled: false });
 
   // One style sheet does it all, so switching off is just removing it.
   const CSS = `
@@ -30,14 +29,10 @@
     }
   }
 
-  function setEnabled(on) {
+  window.__cor3.helper("lighter", () => state.enabled, (on) => {
     state.enabled = on;
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {}
+    window.__cor3.save(STORE_KEY, state);
     apply();
-  }
-  (window.__cor3Toggles = window.__cor3Toggles || {}).lighter = { get: () => state.enabled, set: setEnabled };
-  window.addEventListener("keydown", (e) => {
-    if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "v") { e.preventDefault(); setEnabled(!state.enabled); }
   });
 
   // The game adds videos as you move around (the fog when you open the map).

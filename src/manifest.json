@@ -11,7 +11,7 @@
   },
   "action": {
     "default_title": "COR3 Companion",
-    "default_popup": "popup.html",
+    "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png"
@@ -28,9 +28,13 @@
         "*://*.cor3.gg/*"
       ],
       "js": [
-        "toggles.js",
-        "jobs.js",
-        "loadout.js"
+        "shared/helpers-list.js",
+        "shared/core.js",
+        "shared/toggles.js",
+        "shared/msgpack.js",
+        "shared/socket.js",
+        "helpers/jobs/jobs.js",
+        "helpers/loadout/loadout.js"
       ],
       "run_at": "document_start",
       "world": "MAIN"
@@ -41,11 +45,11 @@
         "*://*.cor3.gg/*"
       ],
       "js": [
-        "solver.js",
-        "expeditions.js",
-        "stash.js",
-        "lighter.js",
-        "topbar.js"
+        "helpers/icewall/icewall.js",
+        "helpers/expeditions/expeditions.js",
+        "helpers/inventory/inventory.js",
+        "helpers/lighter/lighter.js",
+        "helpers/topbar/topbar.js"
       ],
       "run_at": "document_idle",
       "world": "MAIN"
@@ -56,7 +60,7 @@
         "*://*.cor3.gg/*"
       ],
       "js": [
-        "bridge.js"
+        "shared/bridge.js"
       ],
       "run_at": "document_start"
     }
