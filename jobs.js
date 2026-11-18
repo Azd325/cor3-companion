@@ -242,12 +242,13 @@
   const CSS = `
     :host { all: initial; }
     .p { position: fixed; z-index: 2147483646; width: 340px; max-height: 70vh; display: flex; flex-direction: column;
-         background: rgba(8,16,22,.95); border: 1px solid #2d4a55; border-radius: 6px; color: #cfe7ee;
-         font: 12px/1.4 ui-monospace, Consolas, monospace; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
-    .h { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: #10222b; cursor: move;
-         border-bottom: 1px solid #2d4a55; user-select: none; border-radius: 6px 6px 0 0; }
-    .h b { flex: 1; color: #76c1d1; letter-spacing: .05em; }
-    .h button { background: none; border: 1px solid #2d4a55; color: #9fc; cursor: pointer; border-radius: 3px; font: inherit; padding: 0 6px; }
+         background: rgba(8,16,22,.92); border: 1px solid #2d4a55; border-radius: 6px; color: #cfe7ee;
+         font: 11px/1.45 ui-monospace, Consolas, monospace; box-shadow: 0 4px 14px rgba(0,0,0,.45); }
+    .h { display: flex; align-items: stretch; height: 22px; line-height: 22px; cursor: move; user-select: none;
+         border-bottom: 1px solid #2d4a55; }
+    .h b { flex: 1; padding: 0 8px; color: #76c1d1; letter-spacing: .05em; }
+    .h button { all: unset; padding: 0 8px; border-left: 1px solid #1d3640; color: #cfe7ee; cursor: pointer; }
+    .h button:hover { background: #10222b; }
     .b { overflow: auto; padding: 6px 8px; }
     .job { border: 1px solid #22363f; border-radius: 4px; padding: 6px; margin-bottom: 6px; }
     .job.ready { border-color: #2fae6a; }
@@ -420,7 +421,7 @@
     });
     const active = jobs.filter((j) => j.status === "TAKEN").length;
 
-    let html = `<div class="h"><b>JOBS (${active})</b>
+    let html = `<div class="h"><b>&#9670; JOBS (${active})</b>
       <button data-act="clear" title="Forget stored jobs">clear</button>
       <button data-act="min">${state.panel.min ? "+" : "&ndash;"}</button>
       <button data-act="close" title="Alt+J to reopen">&times;</button></div>`;

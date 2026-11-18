@@ -143,8 +143,7 @@ nothing to say:
   still needs work (red under 15 minutes). Click it to open the job tracker. With no jobs taken it shows when the
   market's jobs reset.
 - **Decision 2m 10s ▾**: an expedition is waiting for your choice, with the time left (red under a minute).
-  Click it to see every choice with its exact risk and loot change and the mission risk after it; you still pick
-  in the game's own window.
+  Click it to bring up the game's expedition window.
 - **Helpers ▾**: the same switches as the toolbar menu, so you don't have to leave the game.
 
 Click **◆ COR3** to shrink the bar to a single diamond, or press Alt+B to hide it. It remembers your choice.

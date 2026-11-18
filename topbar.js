@@ -53,9 +53,9 @@
     for (const d of decs.values()) {
       const t = toMs(d.deadline);
       if (d.isResolved || !(t > Date.now())) continue;
-      if (!soonest || t < soonest.t) soonest = { t, d };
+      if (!soonest || t < soonest.t) soonest = { t };
     }
-    return soonest && { ms: soonest.t - Date.now(), text: left(soonest.t), dec: soonest.d };
+    return soonest && { ms: soonest.t - Date.now(), text: left(soonest.t) };
   }
 
   // ---------- bar ----------
@@ -85,11 +85,6 @@
     .row:hover { background: #10222b; }
     .row .n { flex: 1; }
     .row kbd { color: #5df0a0; font: inherit; font-size: 10px; }
-    .opt { padding: 5px 10px; border-top: 1px solid #16262e; }
-    .opt:first-of-type { border-top: none; }
-    .opt .l { color: #e6f6fa; font-weight: 700; }
-    .opt .v { font-size: 11px; }
-    .head { padding: 3px 10px 5px; color: #7f9aa3; font-size: 11px; border-bottom: 1px solid #2d4a55; }
     .sw { width: 26px; height: 14px; border-radius: 7px; border: 1px solid #2d4a55; background: #16262e; position: relative; }
     .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; border-radius: 50%; background: #7f9aa3; }
     .sw.on { background: #144d30; border-color: #2fae6a; }
@@ -119,7 +114,11 @@
     bar.addEventListener("click", (e) => {
       const act = e.target.closest("[data-act]")?.dataset.act;
       if (act === "min") { state.min = !state.min; openMenu = null; save(); }
-      if (act === "helpers" || act === "decision") openMenu = openMenu === act ? null : act;
+      if (act === "helpers") openMenu = openMenu ? null : "helpers";
+      if (act === "decision" && !openExpeditions()) {
+        const btn = e.target.closest("[data-act]");
+        btn.title = "Couldn't find the game's Expeditions button. Open Expeditions in the game.";
+      }
       if (act === "jobs") toggles().jobs?.set(true);
       render(true);
     });
@@ -152,7 +151,7 @@
 
     const d = decisionInfo();
     if (d) {
-      parts.push(`<button class="seg" data-act="decision" title="Show the choices with their exact risk and loot">Decision <span class="${d.ms < 60e3 ? "bad" : "warn"}">${d.text}</span> &#9662;</button>`);
+      parts.push(`<button class="seg" data-act="decision" title="Open the expedition in the game">Decision <span class="${d.ms < 60e3 ? "bad" : "warn"}">${d.text}</span></button>`);
     }
 
     parts.push(`<button class="seg" data-act="helpers" title="Switch helpers">Helpers &#9662;</button>`);
@@ -168,24 +167,29 @@
     }).join("");
   }
 
-  // The open decision's choices with their exact numbers, from the expedition data.
-  const esc = (x) => String(x ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const num = (n, goodUp) => {
-    if (typeof n !== "number") return `<span class="dim">?</span>`;
-    const cls = n === 0 ? "dim" : (n > 0) === goodUp ? "ok" : "bad";
-    return `<span class="${cls}">${n > 0 ? "+" : n < 0 ? "&minus;" : "&plusmn;"}${Math.abs(n)}</span>`;
-  };
-  function decisionHtml() {
-    const d = decisionInfo();
-    if (!d) return `<div class="head">No decision open.</div>`;
-    const risk = d.dec.riskScore;
-    let html = `<div class="head">${typeof risk === "number" ? `Mission risk now ${risk}. ` : ""}Pick in the game's window.</div>`;
-    for (const o of d.dec.options || []) {
-      const after = typeof risk === "number" && typeof o.riskModifier === "number"
-        ? ` &middot; <span class="dim">risk &rarr; ${Math.max(0, Math.min(100, risk + o.riskModifier))}</span>` : "";
-      html += `<div class="opt"><div class="l">${esc(o.label)}</div><div class="v">Risk ${num(o.riskModifier, false)} &middot; Loot ${num(o.lootModifier, true)}${after}</div></div>`;
+  // Decision click: bring up the game's own expedition window. If its choice
+  // buttons are already on screen, scroll to them and flash them; otherwise
+  // click the game's Expeditions button (found by its text, since the game
+  // gives it no stable id). Opening a window only changes what you see.
+  const mine = (el) => el.closest("#cor3-topbar-host, #cor3-job-tracker-host");
+  const visible = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  function openExpeditions() {
+    const opts = document.querySelector('[data-component-name="ExpeditionsEventButtons"]');
+    if (opts && visible(opts)) {
+      opts.scrollIntoView({ block: "center", behavior: "smooth" });
+      opts.animate([{ outline: "2px solid #ffa040" }, { outline: "2px solid transparent" }], { duration: 1200 });
+      return true;
     }
-    return html;
+    const want = /^expeditions?$/i;
+    const hits = [...document.querySelectorAll('button, a, [role="button"], [data-component-name], [title], [aria-label], span, div')]
+      .filter((el) => !mine(el) && visible(el) &&
+        (want.test((el.textContent || "").trim()) || want.test(el.getAttribute("aria-label") || "") || want.test(el.getAttribute("title") || "")));
+    if (!hits.length) return false;
+    // The innermost match, then the nearest clickable thing around it.
+    const leaf = hits.find((el) => !hits.some((o) => o !== el && el.contains(o))) || hits[0];
+    const target = leaf.closest('button, a, [role="button"]') || leaf;
+    target.click();
+    return true;
   }
 
   // Line the open menu up under its button, right edges together.
@@ -208,7 +212,7 @@
     if (openMenu) placeMenu();
     menu.hidden = !openMenu;
     if (openMenu) {
-      const html = openMenu === "helpers" ? menuHtml() : decisionHtml();
+      const html = menuHtml();
       if (menu.innerHTML !== html) menu.innerHTML = html;
     }
   }
