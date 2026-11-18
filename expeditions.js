@@ -1,16 +1,14 @@
 // COR3 expeditions helper.
-// - Shows each decision option's risk/loot change on the button itself (the game
-//   hides it in a hover tooltip), with risk colours the right way round.
-// - Marks options that are a clear win (less risk or more loot, no downside).
+// - Makes the game's hover popup on decision options clear: next to "Risk" and
+//   "Rewards" it writes HIGHER / LOWER / SAME (or MORE / LESS) in the right colour
+//   (the game colours "risk up" green), and adds a one-line verdict.
 // - Adds the exact risk score (0-100) next to LOW / MODERATE / HIGH.
 // Reads React props only; never sends anything.
 (() => {
   "use strict";
 
-  const LABEL_CLASS = "cor3-exp-mods";
   const SCORE_CLASS = "cor3-exp-score";
   const GREEN = "#5df0a0", RED = "#ff8a70", GREY = "#7f9aa3";
-  const ARROW = { up: "&#9650;", down: "&#9660;", no_change: "&#8211;" };
 
   function fiberOf(el) {
     const key = Object.keys(el).find((k) => k.startsWith("__reactFiber$"));
@@ -30,45 +28,120 @@
     return null;
   }
 
-  // Risk going up is bad, loot going up is good.
-  const riskColor = (c) => (c === "up" ? RED : c === "down" ? GREEN : GREY);
-  const lootColor = (c) => (c === "up" ? GREEN : c === "down" ? RED : GREY);
+  const AMBER = "#ffc966";
+  const OPTIONS_SEL = '[data-component-name="ExpeditionsEventButtons"]';
+  const WORD_CLASS = "cor3-exp-word", VERDICT_CLASS = "cor3-exp-verdict";
+  const MINE = `.${WORD_CLASS}, .${VERDICT_CLASS}, .${SCORE_CLASS}`;
 
-  const isClearWin = (b) =>
-    b.riskChange !== "up" && b.lootChange !== "down" &&
-    (b.riskChange === "down" || b.lootChange === "up");
+  const RISK_WORD = { up: ["HIGHER", RED], down: ["LOWER", GREEN], no_change: ["SAME", GREY] };
+  const LOOT_WORD = { up: ["MORE", GREEN], down: ["LESS", RED], no_change: ["SAME", GREY] };
 
-  function labelHtml(b) {
-    const parts = [];
-    if (b.riskChange) parts.push(`<span style="color:${riskColor(b.riskChange)}">Risk ${ARROW[b.riskChange] || ""}</span>`);
-    if (b.lootChange) parts.push(`<span style="color:${lootColor(b.lootChange)}">Loot ${ARROW[b.lootChange] || ""}</span>`);
-    if (!parts.length) return "";
-    const star = isClearWin(b) ? `<span style="color:${GREEN}" title="Less risk or more loot, no downside">&#9733;</span> ` : "";
-    return star + parts.join(" &nbsp;");
+  // One line that sums up the option.
+  function verdict(b) {
+    const r = b.riskChange || "no_change", l = b.lootChange || "no_change";
+    if (r !== "up" && l !== "down" && (r === "down" || l === "up")) return ["★ No downside", GREEN];
+    if (r === "up" && l === "up") return ["Trade-off: more loot, more danger", AMBER];
+    if (r === "down" && l === "down") return ["Trade-off: safer, less loot", AMBER];
+    if (r === "up") return ["✕ More danger, nothing gained", RED];
+    if (l === "down") return ["✕ Less loot, nothing gained", RED];
+    return ["No change", GREY];
   }
 
-  function annotateButtons() {
-    for (const box of document.querySelectorAll('[data-component-name="ExpeditionsEventButtons"]')) {
-      const buttons = findProps(box, (p) => (Array.isArray(p.buttons) ? p.buttons : null), 5);
-      if (!buttons) continue;
-      // The game renders one wrapper element per option, in the same order.
-      const items = Array.from(box.children);
-      buttons.forEach((b, i) => {
-        const item = items[i];
-        if (!item) return;
-        // On narrow windows the game already shows the modifiers inline; don't double them.
-        const html = item.getAttribute("data-component-name") === "ExpeditionsEventButtonItem" ? "" : labelHtml(b);
-        let label = item.querySelector(`:scope > .${LABEL_CLASS}`);
-        if (!html) { if (label) label.remove(); return; }
-        if (!label) {
-          label = document.createElement("div");
-          label.className = LABEL_CLASS;
-          label.style.cssText = "margin-top:4px;font:600 11px/1.2 ui-monospace,Consolas,monospace;" +
-            "text-align:center;pointer-events:none;white-space:nowrap";
-          item.appendChild(label);
-        }
-        if (label.innerHTML !== html) label.innerHTML = html;
-      });
+  // The option (and its data) for an element inside the options list.
+  function optionOf(el) {
+    const box = el && el.closest && el.closest(OPTIONS_SEL);
+    if (!box) return null;
+    const buttons = findProps(box, (p) => (Array.isArray(p.buttons) ? p.buttons : null), 5);
+    if (!buttons) return null;
+    // The game renders one wrapper element per option, in the same order.
+    const i = Array.from(box.children).findIndex((c) => c.contains(el));
+    return i >= 0 && buttons[i] ? buttons[i] : null;
+  }
+
+  // The game's popup is not inside the option, so remember the hovered one.
+  let hovered = null;
+  document.addEventListener("mouseover", (e) => {
+    const b = optionOf(e.target);
+    if (b) hovered = b;
+  }, true);
+
+  const ownText = (el) => {
+    let t = "";
+    for (const n of el.childNodes) {
+      if (n.nodeType === 3) t += n.nodeValue;
+      else if (!(n.matches && n.matches(MINE))) t += ownText(n);
+    }
+    return t;
+  };
+
+  // Text nodes that are exactly "Risk" or "Rewards"/"Loot" (the popup's labels).
+  function labelNodes(root) {
+    const out = [];
+    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => /^\s*(risk|rewards?|loot)\s*$/i.test(n.nodeValue) &&
+        !(n.parentElement && n.parentElement.closest(MINE))
+        ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP,
+    });
+    for (let n; (n = walk.nextNode());) out.push(n);
+    return out;
+  }
+
+  function setWord(textNode, word, color) {
+    let span = textNode.nextSibling;
+    if (!(span && span.classList && span.classList.contains(WORD_CLASS))) {
+      span = document.createElement("span");
+      span.className = WORD_CLASS;
+      span.style.cssText = "margin-left:.45em;font-weight:700;letter-spacing:.04em;white-space:nowrap";
+      textNode.parentNode.insertBefore(span, textNode.nextSibling);
+    }
+    const text = word ? `${word}` : "";
+    if (span.textContent !== text) span.textContent = text;
+    if (span.style.color !== color) span.style.color = color || "";
+  }
+
+  // Smallest element that holds both the risk and the rewards label.
+  function commonParent(a, b) {
+    for (let el = a.parentElement; el; el = el.parentElement) if (el.contains(b)) return el;
+    return null;
+  }
+
+  function annotatePopups() {
+    const nodes = labelNodes(document.body);
+    const risks = nodes.filter((n) => /risk/i.test(n.nodeValue));
+    const loots = nodes.filter((n) => !/risk/i.test(n.nodeValue));
+    for (const r of risks) {
+      // The popup has a Risk and a Rewards label close together, and no other text.
+      let popup = null, loot = null;
+      for (const l of loots) {
+        const p = commonParent(r, l);
+        if (!p) continue;
+        let depth = 0;
+        for (let el = r.parentElement; el && el !== p; el = el.parentElement) depth++;
+        if (depth > 4) continue;
+        // Ignore chevrons and other symbols; only the two words may be there.
+        if (!/^risk(rewards?|loot)$/i.test(ownText(p).replace(/[^a-z]/gi, ""))) continue;
+        popup = p; loot = l; break;
+      }
+      if (!popup) continue;
+      // Inside an option (narrow windows) use that option, else the hovered one.
+      const b = optionOf(popup) || hovered;
+      const rw = b && RISK_WORD[b.riskChange], lw = b && LOOT_WORD[b.lootChange];
+      setWord(r, rw && rw[0], rw && rw[1]);
+      setWord(loot, lw && lw[0], lw && lw[1]);
+      let v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
+      if (!b) { if (v) v.remove(); continue; }
+      const [text, color] = verdict(b);
+      if (!v) {
+        v = document.createElement("div");
+        v.className = VERDICT_CLASS;
+        v.style.cssText = "flex-basis:100%;width:100%;margin-top:6px;padding-top:5px;" +
+          "border-top:1px solid rgba(127,154,163,.35);font-weight:700;font-size:.9em;white-space:nowrap";
+        popup.appendChild(v);
+        // A row popup: let the verdict wrap onto its own line.
+        if (getComputedStyle(popup).display.includes("flex")) popup.style.flexWrap = "wrap";
+      }
+      if (v.textContent !== text) v.textContent = text;
+      if (v.style.color !== color) v.style.color = color;
     }
   }
 
@@ -104,8 +177,15 @@
     }
   }
 
-  setInterval(() => {
-    try { annotateButtons(); annotateRiskScore(); }
+  // The popup only lives while hovering, so react to DOM changes, not a timer.
+  let queued = false;
+  const run = () => {
+    queued = false;
+    try { annotatePopups(); annotateRiskScore(); }
     catch (e) { console.warn("[expeditions helper]", e); }
-  }, 500);
+  };
+  new MutationObserver(() => {
+    if (!queued) { queued = true; requestAnimationFrame(run); }
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  setInterval(run, 1000);
 })();

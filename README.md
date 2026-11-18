@@ -7,8 +7,8 @@ Browser extension for cor3.gg:
 - **ICE WALL Break**: highlights where the target pattern fits on the board (Alt+H toggles).
 - **Job tracker**: a panel with your taken jobs, their to-do items and server access (Alt+J toggles),
   plus an access mark after the server names on the market's job cards.
-- **Expeditions**: shows each decision option's risk and loot change right on the button,
-  and the exact risk score of a mission.
+- **Expeditions**: makes the risk/rewards popup on decision options clear (higher/lower, more/less
+  and a one-line verdict), and shows the exact risk score of a mission.
 
 It only reads what the game already sends to your browser; it never sends anything itself.
 
@@ -71,11 +71,14 @@ green ✓ access, red ✗ no access, orange ⚠ maintenance, grey ? not on your 
 
 ## Expeditions
 
-When a drone event asks for a decision, the game only shows what each option does to risk and loot
-in a hover tooltip, and colours "risk up" green. The helper puts it under every button instead:
+When a drone event asks for a decision, hovering an option shows the game's popup with **Risk** and
+**Rewards** chevrons, which are small and coloured the wrong way round ("risk up" is green). The helper
+makes that popup clear:
 
-- **Risk ▲** red, **Risk ▼** green; **Loot ▲** green, **Loot ▼** red; **–** means no change.
-- **★** marks a clear win: less risk or more loot, without a downside.
+- After each word it writes what changes, in the right colour: Risk **HIGHER** (red), **LOWER** (green)
+  or **SAME**; Rewards **MORE** (green), **LESS** (red) or **SAME**.
+- A line under it sums the option up: **★ No downside**, **Trade-off: more loot, more danger**,
+  **Trade-off: safer, less loot**, **✕ More danger, nothing gained**, and so on.
 
 The mission's risk level also shows the exact score, e.g. **MODERATE (52)**
 (the game rounds 0–33 to LOW, 34–66 to MODERATE, 67–100 to HIGH).
