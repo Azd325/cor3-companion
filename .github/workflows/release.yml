@@ -98,7 +98,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release create "v$VERSION" release/* \
-            --title "v$VERSION" \
-            --notes "Firefox: open cor3-helper-firefox.xpi in Firefox to install (it updates itself after that).
-          Chrome: unzip cor3-helper-chrome.zip over your extension folder and click reload in chrome://extensions."
+          cat > notes.md <<'EOF'
+          **Firefox:** click `cor3-helper-firefox.xpi` to install (it updates itself after that).
+          **Chrome:** unzip `cor3-helper-chrome.zip` over your extension folder and click reload in `chrome://extensions`.
+
+          Find it useful? [Buy me a coffee ☕](https://buymeacoffee.com/nvanderwaal)
+          EOF
+          gh release create "v$VERSION" release/* --title "v$VERSION" --notes-file notes.md

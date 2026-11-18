@@ -1,5 +1,7 @@
 # COR3 Helper
 
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/nvanderwaal)
+
 Browser extension for cor3.gg:
 
 - **ICE WALL Break**: highlights where the target pattern fits on the board (Alt+H toggles).
