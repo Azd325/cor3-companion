@@ -3,7 +3,7 @@
 //   "Rewards" it writes HIGHER / LOWER / SAME (or MORE / LESS) in the right colour
 //   (the game colours "risk up" green), and adds a one-line verdict.
 // - With the expedition data the game sends (read through the websocket hook in
-//   jobs.js) it adds the exact numbers: Risk HIGHER +8, the mission risk after
+//   shared/socket.js) it adds the exact numbers: Risk HIGHER +8, the mission risk after
 //   the choice, and the time left to decide.
 // - Adds the exact risk score (0-100) next to LOW / MODERATE / HIGH.
 // - Shows death and fail chance on the mercenary cards once the game has priced
@@ -13,25 +13,8 @@
   "use strict";
 
   const SCORE_CLASS = "cor3-exp-score";
-  const GREEN = "#5df0a0", RED = "#ff8a70", GREY = "#7f9aa3";
-
-  function fiberOf(el) {
-    const key = Object.keys(el).find((k) => k.startsWith("__reactFiber$"));
-    return key ? el[key] : null;
-  }
-
-  // Walk up the fiber tree until test(props) matches.
-  function findProps(el, test, maxDepth = 25) {
-    let f = fiberOf(el);
-    for (let i = 0; f && i < maxDepth; i++, f = f.return) {
-      const p = f.memoizedProps;
-      if (p && typeof p === "object") {
-        const hit = test(p);
-        if (hit) return hit;
-      }
-    }
-    return null;
-  }
+  const { findProps, load, save } = window.__cor3;
+  const { GREEN, RED, GREY } = window.__cor3.color;
 
   const AMBER = "#ffc966";
   const OPTIONS_SEL = '[data-component-name="ExpeditionsEventButtons"]';
@@ -59,20 +42,12 @@
 
   // ---------- on/off ----------
   const STORE_KEY = "cor3-expeditions-helper";
-  const state = { enabled: true };
-  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (_) {}
-  function setEnabled(on) {
+  const state = load(STORE_KEY, { enabled: true });
+  window.__cor3.helper("expeditions", () => state.enabled, (on) => {
     state.enabled = on;
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {}
+    save(STORE_KEY, state);
     if (!on) for (const el of document.querySelectorAll(MINE)) el.remove();
     else run();
-  }
-  (window.__cor3Toggles = window.__cor3Toggles || {}).expeditions = { get: () => state.enabled, set: setEnabled };
-  window.addEventListener("keydown", (e) => {
-    if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "e") {
-      e.preventDefault();
-      setEnabled(!state.enabled);
-    }
   });
 
   // ---------- decisions from the websocket ----------
@@ -129,7 +104,7 @@
       if (v && typeof v === "object" && k !== "messages") scan(v, depth + 1);
     }
   }
-  (window.__cor3PacketListeners = window.__cor3PacketListeners || []).push(scan);
+  window.__cor3.onPacket(scan);
 
   const normText = (x) => String(x ?? "").trim().toLowerCase();
   const isOpen = (d) => !d.isResolved && !(Date.parse(d.deadline) < Date.now());

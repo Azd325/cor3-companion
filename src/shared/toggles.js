@@ -1,6 +1,7 @@
 // COR3 helper switches.
-// Each helper registers itself here with get/set, so the toolbar menu can
-// show and flip it (through bridge.js) as well as the helper's own shortcut.
+// Each helper registers its get/set here (window.__cor3.helper in core.js), so
+// the toolbar menu can show and flip it (through bridge.js) as well as the
+// helper's own shortcut.
 // Runs in the page's JS world before the helpers.
 (() => {
   "use strict";

@@ -1,4 +1,4 @@
-# <img src="icons/icon-128.png" alt="" width="40" align="center"> COR3 Companion
+# <img src="src/icons/icon-128.png" alt="" width="40" align="center"> COR3 Companion
 
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/nvanderwaal)
 

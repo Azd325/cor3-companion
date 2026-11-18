@@ -1,23 +1,26 @@
-// Builds the extension for Chrome and Firefox.
-//   node build.mjs
+// Builds the extension in src/ for Chrome and Firefox.
+//   node scripts/build.mjs
 // Output in dist/:
 //   chrome/                     folder for chrome://extensions > "Load unpacked"
 //   firefox/                    folder for about:debugging or `web-ext sign`
 //   cor3-companion-chrome.zip
 //   cor3-companion-firefox.xpi
-import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync, readdirSync } from "node:fs";
 import { deflateRawSync } from "node:zlib";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = dirname(fileURLToPath(import.meta.url));
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const src = join(root, "src");
 const dist = join(root, "dist");
-const FILES = [
-  "toggles.js", "bridge.js", "jobs.js", "loadout.js", "solver.js", "expeditions.js", "stash.js", "lighter.js", "topbar.js", "popup.html", "popup.js",
-  "icons/icon-16.png", "icons/icon-32.png", "icons/icon-48.png", "icons/icon-128.png",
-  "update-check.js",
-];
-const base = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8"));
+// Everything in src/ goes in the package, except the manifest (written per
+// browser below) and the icon's SVG source (the PNGs are made from it).
+const FILES = readdirSync(src, { recursive: true, withFileTypes: true })
+  .filter((e) => e.isFile())
+  .map((e) => join(e.parentPath ?? e.path, e.name).slice(src.length + 1).split("\\").join("/"))
+  .filter((f) => f !== "manifest.json" && !f.endsWith(".svg"))
+  .sort();
+const base = JSON.parse(readFileSync(join(src, "manifest.json"), "utf8"));
 
 // FIREFOX_UPDATE_URL (set by the GitHub release workflow) lets installed
 // Firefox copies update themselves from the repo's latest release.
@@ -84,11 +87,11 @@ for (const [name, manifest] of Object.entries(targets)) {
   writeFileSync(join(dir, "manifest.json"), manifestBuf);
   for (const f of FILES) {
     mkdirSync(dirname(join(dir, f)), { recursive: true });
-    copyFileSync(join(root, f), join(dir, f));
+    copyFileSync(join(src, f), join(dir, f));
   }
   const entries = [
     { name: "manifest.json", data: manifestBuf },
-    ...FILES.map((f) => ({ name: f, data: readFileSync(join(root, f)) })),
+    ...FILES.map((f) => ({ name: f, data: readFileSync(join(src, f)) })),
   ];
   const out = join(dist, name === "chrome" ? "cor3-companion-chrome.zip" : "cor3-companion-firefox.xpi");
   writeFileSync(out, zip(entries));

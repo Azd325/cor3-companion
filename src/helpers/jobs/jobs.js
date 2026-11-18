@@ -5,87 +5,9 @@
 (() => {
   "use strict";
 
-  // ---------- msgpack decoder (socket.io-msgpack-parser / notepack format) ----------
-  function decodeMsgpack(buf) {
-    const view = new DataView(buf);
-    const bytes = new Uint8Array(buf);
-    const td = new TextDecoder();
-    let off = 0;
-    const str = (n) => { const s = td.decode(bytes.subarray(off, off + n)); off += n; return s; };
-    const bin = (n) => { const b = bytes.slice(off, off + n); off += n; return b; };
-    const arr = (n) => { const a = new Array(n); for (let i = 0; i < n; i++) a[i] = read(); return a; };
-    const map = (n) => { const o = {}; for (let i = 0; i < n; i++) { const k = read(); o[k] = read(); } return o; };
-    // Extension types as notepack.io writes them: undefined, dates, timestamps.
-    const ext = (n) => {
-      const type = view.getInt8(off); off++;
-      let d;
-      if (type === 0 && n === 1) { off += 1; return undefined; }
-      if (type === 0 && n === 8) { d = new Date(view.getInt32(off) * 2 ** 32 + view.getUint32(off + 4)); off += 8; return d; }
-      if (type === -1 && n === 4) { d = new Date(view.getUint32(off) * 1e3); off += 4; return d; }
-      if (type === -1 && n === 8) {
-        const hi = view.getUint32(off), lo = view.getUint32(off + 4); off += 8;
-        return new Date(((hi & 3) * 2 ** 32 + lo) * 1e3 + (hi >>> 2) / 1e6);
-      }
-      if (type === -1 && n === 12) {
-        const ns = view.getUint32(off), s = Number(view.getBigInt64(off + 4)); off += 12;
-        return new Date(s * 1e3 + ns / 1e6);
-      }
-      return bin(n);
-    };
-    function read() {
-      const b = bytes[off++];
-      if (b < 0x80) return b;
-      if (b < 0x90) return map(b & 0x0f);
-      if (b < 0xa0) return arr(b & 0x0f);
-      if (b < 0xc0) return str(b & 0x1f);
-      if (b >= 0xe0) return b - 0x100;
-      let v;
-      switch (b) {
-        case 0xc0: return null;
-        case 0xc2: return false;
-        case 0xc3: return true;
-        case 0xc4: v = view.getUint8(off); off += 1; return bin(v);
-        case 0xc5: v = view.getUint16(off); off += 2; return bin(v);
-        case 0xc6: v = view.getUint32(off); off += 4; return bin(v);
-        case 0xc7: v = view.getUint8(off); off += 1; return ext(v);
-        case 0xc8: v = view.getUint16(off); off += 2; return ext(v);
-        case 0xc9: v = view.getUint32(off); off += 4; return ext(v);
-        case 0xca: v = view.getFloat32(off); off += 4; return v;
-        case 0xcb: v = view.getFloat64(off); off += 8; return v;
-        case 0xcc: v = view.getUint8(off); off += 1; return v;
-        case 0xcd: v = view.getUint16(off); off += 2; return v;
-        case 0xce: v = view.getUint32(off); off += 4; return v;
-        case 0xcf: v = Number(view.getBigUint64(off)); off += 8; return v;
-        case 0xd0: v = view.getInt8(off); off += 1; return v;
-        case 0xd1: v = view.getInt16(off); off += 2; return v;
-        case 0xd2: v = view.getInt32(off); off += 4; return v;
-        case 0xd3: v = Number(view.getBigInt64(off)); off += 8; return v;
-        case 0xd4: return ext(1);
-        case 0xd5: return ext(2);
-        case 0xd6: return ext(4);
-        case 0xd7: return ext(8);
-        case 0xd8: return ext(16);
-        case 0xd9: v = view.getUint8(off); off += 1; return str(v);
-        case 0xda: v = view.getUint16(off); off += 2; return str(v);
-        case 0xdb: v = view.getUint32(off); off += 4; return str(v);
-        case 0xdc: v = view.getUint16(off); off += 2; return arr(v);
-        case 0xdd: v = view.getUint32(off); off += 4; return arr(v);
-        case 0xde: v = view.getUint16(off); off += 2; return map(v);
-        case 0xdf: v = view.getUint32(off); off += 4; return map(v);
-      }
-      throw new Error("msgpack: unknown byte 0x" + b.toString(16));
-    }
-    return read();
-  }
+  const { esc, toMs, load, save: store, shadowHost } = window.__cor3;
 
   // ---------- times ----------
-  // Game times arrive as Date (msgpack) or ISO strings (JSON / localStorage).
-  function toMs(v) {
-    if (v instanceof Date) return v.getTime();
-    if (typeof v === "string") { const t = Date.parse(v); return Number.isFinite(t) ? t : NaN; }
-    if (typeof v === "number" && v > 1e12) return v;
-    return NaN;
-  }
   // "2h 05m", "12m", "40s"; null when the time is unknown or past.
   function shortLeft(v) {
     const ms = toMs(v) - Date.now();
@@ -98,12 +20,11 @@
 
   // ---------- state ----------
   const STORE_KEY = "cor3-job-tracker";
-  const state = { jobs: {}, servers: {}, checks: {}, panel: { x: 20, y: 80, open: true, min: false } };
-  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (_) {}
+  const state = load(STORE_KEY, { jobs: {}, servers: {}, checks: {}, panel: { x: 20, y: 80, open: true, min: false } });
   // Raw copies of the last job lists, for checking in the console (window.__cor3JobTracker).
   const debug = { lastJobs: null, lastRecentJobs: null };
   window.__cor3JobTracker = { debug, state };
-  const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {} };
+  const save = () => store(STORE_KEY, state);
 
   const isJob = (o) => o && typeof o === "object" && ["TAKEN", "COMPLETED", "FAILED"].includes(o.status) &&
     ("conditions" in o || "relatedServers" in o) && o.id != null;
@@ -216,42 +137,12 @@
     }
     return changed;
   }
-
-  // Other helpers (loadout.js) read the same decoded packets through this list,
-  // so the websocket is hooked only once.
-  const packetListeners = (window.__cor3PacketListeners = window.__cor3PacketListeners || []);
-
-  function onPacket(data) {
+  // Every decoded websocket packet (shared/socket.js).
+  window.__cor3.onPacket((data) => {
     try {
       if (scan(data, 0)) { save(); render(); }
     } catch (e) { console.warn("[job tracker]", e); }
-    for (const fn of packetListeners) {
-      try { fn(data); } catch (e) { console.warn("[cor3 helper]", e); }
-    }
-  }
-
-  // ---------- websocket hook ----------
-  const NativeWS = window.WebSocket;
-  function handleFrame(ev) {
-    const d = ev.data;
-    if (d instanceof ArrayBuffer) {
-      try { onPacket(decodeMsgpack(d)); } catch (_) {}
-    } else if (typeof Blob !== "undefined" && d instanceof Blob) {
-      d.arrayBuffer().then((b) => { try { onPacket(decodeMsgpack(b)); } catch (_) {} });
-    } else if (typeof d === "string" && d.length > 2 && d[0] === "4") {
-      // Plain socket.io text frame fallback: 42["event",{...}]
-      const i = d.indexOf("[");
-      if (i > 0) { try { onPacket(JSON.parse(d.slice(i))); } catch (_) {} }
-    }
-  }
-  function HookedWS(...args) {
-    const ws = new NativeWS(...args);
-    try { ws.addEventListener("message", handleFrame); } catch (_) {}
-    return ws;
-  }
-  HookedWS.prototype = NativeWS.prototype;
-  for (const k of ["CONNECTING", "OPEN", "CLOSING", "CLOSED"]) HookedWS[k] = NativeWS[k];
-  window.WebSocket = HookedWS;
+  });
 
   // ---------- panel ----------
   const CSS = `
@@ -290,18 +181,7 @@
   function ensurePanel() {
     if (panel && document.documentElement.contains(host)) return true;
     if (!document.body) return false;
-    host = document.createElement("div");
-    host.id = "cor3-job-tracker-host";
-    root = host.attachShadow({ mode: "open" });
-    try {
-      const sheet = new CSSStyleSheet();
-      sheet.replaceSync(CSS);
-      root.adoptedStyleSheets = [sheet];
-    } catch (_) {
-      const st = document.createElement("style");
-      st.textContent = CSS;
-      root.appendChild(st);
-    }
+    ({ host, root } = shadowHost("cor3-job-tracker-host", CSS));
     panel = document.createElement("div");
     panel.className = "p";
     lastHtml = "";
@@ -342,8 +222,6 @@
     });
     return true;
   }
-
-  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   function timeLeft(job) {
     if (!job.endTime) return "";
@@ -604,16 +482,13 @@
   }
 
   // Alt+J or the toolbar menu shows or hides the panel.
-  const setOpen = (on) => { state.panel.open = on; save(); render(); };
-  (window.__cor3Toggles = window.__cor3Toggles || {}).jobs = { get: () => state.panel.open, set: setOpen };
-  window.addEventListener("keydown", (e) => {
-    if (e.altKey && e.key.toLowerCase() === "j") setOpen(!state.panel.open);
-  });
+  window.__cor3.helper("jobs", () => state.panel.open, (on) => { state.panel.open = on; save(); render(); });
 
   // ---------- access marks on the market's job cards ----------
   // The cards only show server names as text ("Servers - RM7-S4L2, 10.0.0.7"),
   // so match each name/IP against the servers seen on the network map.
   const MARK_CLASS = "cor3-jt-mark";
+  const { GREEN, RED } = window.__cor3.color;
   const SERVER_TEXT = [
     '[data-component-name="JobCardCollapsedText"]',
     '[data-component-name="JobCardExpandedInfoValue"]',
@@ -694,7 +569,7 @@
       }
       const ch = ok ? "\u2713" : "\u2717";
       if (mark.textContent !== ch) mark.textContent = ch;
-      mark.style.color = ok ? "#5df0a0" : "#ff8a70";
+      mark.style.color = ok ? GREEN : RED;
       if (mark.title !== tip) mark.title = tip;
     }
   }

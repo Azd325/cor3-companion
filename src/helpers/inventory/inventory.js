@@ -2,32 +2,28 @@
 // On the game's inventory page: the sell price on every item, a border in the
 // item's rarity colour (none for common), and one line with the stash's total value.
 // Uses the stash data the game sends when you open the inventory (through the
-// websocket hook in jobs.js). Alt+I or the toolbar menu toggles it.
+// websocket hook in shared/socket.js). Alt+I or the toolbar menu toggles it.
 // Reads only; never sends anything.
 (() => {
   "use strict";
+  const { findProps, load, save } = window.__cor3;
 
   const PRICE_CLASS = "cor3-inv-price", SUM_CLASS = "cor3-inv-sum", TOP_ATTR = "data-cor3-inv-top";
   // Border per rarity (the game's `tier`); common items get none.
-  const TIER_COLOR = { rare: "#4da3ff", epic: "#b06cff", legendary: "#ffa040", quest: "#5df0a0" };
+  const TIER_COLOR = { rare: "#4da3ff", epic: "#b06cff", legendary: "#ffa040", quest: window.__cor3.color.GREEN };
   const tierColor = (it) => TIER_COLOR[String(it.tier || "").toLowerCase()] || null;
 
   // ---------- on/off ----------
   const STORE_KEY = "cor3-inventory-helper";
-  const state = { enabled: true };
-  try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (_) {}
+  const state = load(STORE_KEY, { enabled: true });
   function clear() {
     for (const el of document.querySelectorAll(`.${PRICE_CLASS}, .${SUM_CLASS}`)) el.remove();
     for (const el of document.querySelectorAll(`[${TOP_ATTR}]`)) { el.style.outline = ""; el.removeAttribute(TOP_ATTR); }
   }
-  function setEnabled(on) {
+  window.__cor3.helper("inventory", () => state.enabled, (on) => {
     state.enabled = on;
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {}
+    save(STORE_KEY, state);
     if (!on) clear(); else run();
-  }
-  (window.__cor3Toggles = window.__cor3Toggles || {}).inventory = { get: () => state.enabled, set: setEnabled };
-  window.addEventListener("keydown", (e) => {
-    if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "i") { e.preventDefault(); setEnabled(!state.enabled); }
   });
 
   // ---------- stash data ----------
@@ -49,26 +45,19 @@
       if (v && typeof v === "object") scan(v, depth + 1);
     }
   }
-  (window.__cor3PacketListeners = window.__cor3PacketListeners || []).push(scan);
+  window.__cor3.onPacket(scan);
   window.__cor3Inventory = { get stash() { return stash; } };
 
   // ---------- page ----------
-  function fiberOf(el) {
-    const key = Object.keys(el).find((k) => k.startsWith("__reactFiber$"));
-    return key ? el[key] : null;
-  }
   // The stash item behind a tile: an `item` prop (or the props themselves)
   // whose id is in the stash.
   function itemOf(el) {
-    let f = fiberOf(el);
-    for (let i = 0; f && i < 4; i++, f = f.return) {
-      const p = f.memoizedProps;
-      if (!p || typeof p !== "object") continue;
+    return findProps(el, (p) => {
       for (const c of [p.item, p.stashItem, p]) {
         if (c && typeof c === "object" && c.id != null && stash.items.has(String(c.id))) return stash.items.get(String(c.id));
       }
-    }
-    return null;
+      return null;
+    }, 4);
   }
   const price = (it) => (it.canSell !== false && typeof it.sellPrice === "number" && it.sellPrice > 0 ? it.sellPrice : 0);
   const qty = (it) => (typeof it.quantity === "number" && it.quantity > 1 ? it.quantity : 1);
@@ -101,7 +90,7 @@
         }
         const text = `${fmt(p)} cr`;
         if (tag.textContent !== text) tag.textContent = text;
-        tag.style.color = tierColor(it) || "#cfe7ee";
+        tag.style.color = tierColor(it) || window.__cor3.color.TEXT;
         tag.title = qty(it) > 1 ? `sells for ${p.toLocaleString()} each, ${(p * qty(it)).toLocaleString()} for all ${qty(it)}` : `sells for ${p.toLocaleString()}`;
       }
       const color = tierColor(it);
