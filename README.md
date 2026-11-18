@@ -5,21 +5,26 @@
 Browser extension for cor3.gg:
 
 - **[ICE WALL Break](#ice-wall-break)**: highlights where the target pattern fits on the board (Alt+H toggles).
-- **[Job tracker](#job-tracker)**: a panel with your taken jobs, their to-do items, server access, maintenance
+- **[Job tracker](#job-tracker)**: a panel with your taken jobs, their to-do items, server access and the route to
+  each server, maintenance
   times and defence against your HACK power (Alt+J toggles), plus an access mark after the server names on the
-  market's job cards.
+  market's job cards and a **DOABLE** tag on the jobs you can do now.
 - **[Expeditions](#expeditions)**: makes the risk/rewards popup on decision options clear (higher/lower, more/less
   with the exact numbers, the mission risk after the choice and the time left to decide), and shows the exact risk
-  score of a mission (Alt+E toggles).
+  score of a mission and the death chance of each mercenary (Alt+E toggles).
 - **[Loadout & market](#loadout--market)**: shows what a program or hardware part would do to your setup, on the
   loadout page and on the market's cards, and stars the best upgrade (Alt+L toggles).
+- **[Inventory](#inventory)**: the sell price on every item in your inventory and a gold border on the most
+  valuable ones (Alt+I toggles).
+- **[Lighter screen](#lighter-screen)**: hides the moving backgrounds and the network map fog (off by default,
+  Alt+V toggles).
 - **[Top bar](#top-bar)**: a thin strip at the top of the game with what needs you now and a menu to switch the
   helpers (Alt+B toggles).
 
 Click the extension's icon in the toolbar for a list of the helpers with a switch for each, which turns the
 helper on or off in your open cor3.gg tabs, the same as its shortcut.
 
-<img src="docs/menu.png" alt="Toolbar menu with a switch and shortcut for each of the five helpers" width="300">
+<img src="docs/menu.png" alt="Toolbar menu with a switch and shortcut for each of the helpers" width="300">
 
 When a newer release is out, the menu shows one small line under its header with a link to it (Chrome right away,
 Firefox only if it hasn't updated itself within 2 days). It checks GitHub at most every 6 hours, only while the
@@ -74,8 +79,12 @@ A panel you can drag around, minimise or hide with Alt+J. For every job you've t
 
 - the time left, and **READY** (green border) once the game says the job can be completed,
 - a **to-do** list with the IPs, files and logs to handle, each with a checkbox you tick yourself,
-- the job's servers with your access: **admin**, **access**, **no access**, **unreachable** or
+- the job's servers with your access: **admin**, **access**, **no access**, **via 1 hack**, **no route** or
   **maintenance**, or **? unknown** until you've opened the network map,
+- for a server you can't get into directly, the route from Home that you can walk now, e.g.
+  Home → RM7-S4L2 → 10.0.0.7, with the servers you still have to hack in orange. The route skips servers in
+  maintenance and servers your HACK power can't beat, and uses as few hacks as it can. With no route at all,
+  hovering **no route** says which server blocks it,
 - for a server in maintenance, how long it has left (**maintenance, 12m left**), and **maint. in 25m**
   when maintenance starts within 2 hours,
 - for a server you don't have access to yet, its defence against your best HACK power, e.g.
@@ -86,8 +95,12 @@ The panel only updates job status while the market's Job tab has been opened, be
 sends those updates there.
 
 On the market's job cards, each server name also gets a mark:
-green ✓ access, red ✗ no access, orange ⚠ maintenance, grey ? not on your network map yet.
-Hovering a mark shows the same maintenance and defence details.
+green ✓ access, yellow ↪ within reach (directly or through servers you can hack), red ✗ no route or a defence
+above your HACK power, orange ⚠ maintenance, grey ? not on your network map yet.
+Hovering a mark shows the route and the same maintenance and defence details.
+
+A job whose servers are all yours or within reach gets a green **DOABLE** tag, and the best-paying of them
+gets **★ DOABLE**. Open the network map and your Loadout once so the tracker knows the routes and your HACK power.
 
 ## Expeditions
 
@@ -107,6 +120,11 @@ still shows the words, just without numbers. Alt+E turns the helper off and on.
 
 The mission's risk level also shows the exact score, e.g. **MODERATE (52)**
 (the game rounds 0–33 to LOW, 34–66 to MODERATE, 67–100 to HIGH).
+
+When you set up an expedition, each mercenary the game has priced gets a line with its odds, e.g.
+**Death 4% · Fail, survives 12%** (red from 10% death). The one with the lowest death chance gets a **★**.
+The odds appear once you've picked that mercenary in the setup, because that's when the game sends them; the
+mission risk then also shows the death chance, e.g. **MODERATE (52) · death 4%**.
 
 ## Loadout & market
 
@@ -148,9 +166,25 @@ nothing to say:
   market's jobs reset.
 - **Decision 2m 10s ▾**: an expedition is waiting for your choice, with the time left (red under a minute).
   Click it to bring up the game's expedition window.
+- **Expedition back**: an expedition has come back and its loot is waiting (or **Expedition back in 4m 30s** in its
+  last 10 minutes). Click it to bring up the game's expedition window.
 - **Helpers ▾**: the same switches as the toolbar menu, so you don't have to leave the game.
 
 Click **◆ COR3** to shrink the bar to a single diamond, or press Alt+B to hide it. It remembers your choice.
+
+## Inventory
+
+When you open your inventory, every item you can sell gets its sell price in its corner, e.g. **12k cr**.
+The most valuable tenth of your items (at least one, at most 8) get a gold border and a gold price, so you
+see at a glance what to keep safe and what to sell. A line above the items shows the total value of your
+stash and the slots used, e.g. **Stash value 48,200 cr · 34/40 slots**. Hovering a price on a stack shows
+the value of the whole stack. Alt+I turns it off and on.
+
+## Lighter screen
+
+Hides the game's moving background videos and the fog on the network map, and pauses them so they stop
+using your computer. It is off until you switch it on with Alt+V or in the menus, and it only changes what
+you see.
 
 ## Development
 

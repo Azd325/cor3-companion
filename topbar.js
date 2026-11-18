@@ -17,6 +17,8 @@
     ["jobs", "Job tracker", "Alt+J"],
     ["loadout", "Loadout & market", "Alt+L"],
     ["expeditions", "Expeditions", "Alt+E"],
+    ["inventory", "Inventory", "Alt+I"],
+    ["lighter", "Lighter screen", "Alt+V"],
     ["topbar", "Top bar", "Alt+B"],
   ];
   const toggles = () => window.__cor3Toggles || {};
@@ -56,6 +58,21 @@
       if (!soonest || t < soonest.t) soonest = { t };
     }
     return soonest && { ms: soonest.t - Date.now(), text: left(soonest.t) };
+  }
+
+  // An expedition that is back (its loot waits for you), or one coming back
+  // within 10 minutes. Nothing while it's still out for longer.
+  function expeditionInfo() {
+    const exps = window.__cor3Expeditions?.expeditions;
+    if (!exps) return null;
+    let back = 0, soon = null;
+    for (const e of exps.values()) {
+      const t = toMs(e.endTime);
+      if ((e.status === "COMPLETED" && !e.opened) || (e.status === "RUNNING" && t <= Date.now())) back++;
+      else if (e.status === "RUNNING" && t - Date.now() < 10 * 60e3 && (!soon || t < soon)) soon = t;
+    }
+    if (back) return { back };
+    return soon ? { text: left(soon) } : null;
   }
 
   // ---------- bar ----------
@@ -152,6 +169,13 @@
     const d = decisionInfo();
     if (d) {
       parts.push(`<button class="seg" data-act="decision" title="Open the expedition in the game">Decision <span class="${d.ms < 60e3 ? "bad" : "warn"}">${d.text}</span></button>`);
+    }
+
+    const x = expeditionInfo();
+    if (x) {
+      parts.push(x.back
+        ? `<button class="seg" data-act="decision" title="Open the expedition in the game"><span class="ok">Expedition back</span></button>`
+        : `<button class="seg" data-act="decision" title="Open the expedition in the game">Expedition back in <span class="t">${x.text}</span></button>`);
     }
 
     parts.push(`<button class="seg" data-act="helpers" title="Switch helpers">Helpers &#9662;</button>`);

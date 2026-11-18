@@ -6,6 +6,8 @@
 //   jobs.js) it adds the exact numbers: Risk HIGHER +8, the mission risk after
 //   the choice, and the time left to decide.
 // - Adds the exact risk score (0-100) next to LOW / MODERATE / HIGH.
+// - Shows death and fail chance on the mercenary cards once the game has priced
+//   that mercenary, with a star on the safest one.
 // Alt+E or the toolbar menu toggles it. Reads only; never sends anything.
 (() => {
   "use strict";
@@ -34,7 +36,7 @@
   const AMBER = "#ffc966";
   const OPTIONS_SEL = '[data-component-name="ExpeditionsEventButtons"]';
   const WORD_CLASS = "cor3-exp-word", VERDICT_CLASS = "cor3-exp-verdict";
-  const MINE = `.${WORD_CLASS}, .${VERDICT_CLASS}, .${SCORE_CLASS}`;
+  const MINE = `.${WORD_CLASS}, .${VERDICT_CLASS}, .${SCORE_CLASS}, .cor3-exp-odds`;
 
   const RISK_WORD = { up: ["HIGHER", RED], down: ["LOWER", GREEN], no_change: ["SAME", GREY] };
   const LOOT_WORD = { up: ["MORE", GREEN], down: ["LESS", RED], no_change: ["SAME", GREY] };
@@ -77,7 +79,15 @@
   // Each decision message carries its options with numeric riskModifier and
   // lootModifier; the expedition carries the mission's riskScore.
   const decisions = new Map(); // message id -> { options, deadline, isResolved, riskScore }
-  window.__cor3Expeditions = { decisions };
+  // Expeditions with their status and end time, for the top bar.
+  const expeditions = new Map(); // expedition id -> { status, endTime, opened }
+  window.__cor3Expeditions = { decisions, expeditions };
+
+  function keepExpedition(exp) {
+    if (exp.id == null || typeof exp.status !== "string" || !("endTime" in exp)) return;
+    if (!("riskScore" in exp) && !("mercenary" in exp)) return;
+    expeditions.set(String(exp.id), { status: exp.status, endTime: exp.endTime, opened: !!exp.containerOpenedAt });
+  }
 
   function keepDecision(msg, exp) {
     if (!msg || msg.id == null || !Array.isArray(msg.decisionOptions)) return;
@@ -90,10 +100,28 @@
     });
   }
 
+  // Mercenary odds: the game's reply when you set up an expedition carries
+  // outcomeChances (death and fail-but-survive chance) for that mercenary.
+  const odds = new Map(); // mercenary id -> { death, fail, cost, risk }
+  let lastOdds = null;
+  function keepOdds(node) {
+    const oc = node.outcomeChances;
+    if (!oc || typeof oc !== "object" || typeof oc.deathChance !== "number") return;
+    const o = { death: oc.deathChance, fail: typeof oc.failureSurviveChance === "number" ? oc.failureSurviveChance : null,
+                cost: typeof node.totalCost === "number" ? node.totalCost : null,
+                risk: typeof node.riskScore === "number" ? node.riskScore : null };
+    const id = node.mercenaryId ?? node.mercenary?.id ?? null;
+    if (id != null) odds.set(String(id), o);
+    lastOdds = o;
+  }
+  window.__cor3Expeditions.odds = odds;
+
   function scan(node, depth) {
     if (!node || typeof node !== "object" || depth > 8) return;
     if (node instanceof Uint8Array || node instanceof Date) return;
     if (Array.isArray(node)) { for (const x of node) scan(x, depth + 1); return; }
+    keepExpedition(node);
+    keepOdds(node);
     if (Array.isArray(node.messages)) for (const m of node.messages) keepDecision(m, node);
     else if (Array.isArray(node.decisionOptions)) keepDecision(node, null);
     for (const k in node) {
@@ -284,7 +312,9 @@
       const hit = missionRiskScore(value);
       let span = value.querySelector(`:scope > .${SCORE_CLASS}`);
       if (!hit) { if (span) span.remove(); continue; }
-      const label = ` (${Math.round(hit.score)})`;
+      // In the setup, add the odds for the mercenary the game just priced.
+      const o = lastOdds && lastOdds.risk != null && Math.round(lastOdds.risk) === Math.round(hit.score) ? lastOdds : null;
+      const label = ` (${Math.round(hit.score)})${o ? ` \u00b7 death ${pct(o.death)}` : ""}`;
       if (!span) {
         span = document.createElement("span");
         span.className = SCORE_CLASS;
@@ -294,12 +324,52 @@
     }
   }
 
+  // Odds on the game's mercenary cards, and a star on the safest one for the
+  // money among the mercenaries you've looked at.
+  const ODDS_CLASS = "cor3-exp-odds";
+  const pct = (n) => `${Math.round(n * 10) / 10}%`;
+  function mercOf(el) {
+    return findProps(el, (p) => {
+      const m = p.mercenary && typeof p.mercenary === "object" ? p.mercenary : p;
+      return m && m.id != null && typeof m.callsign === "string" ? m : null;
+    }, 6);
+  }
+  function annotateMercs() {
+    if (!odds.size) return;
+    const cards = new Map(); // merc id -> outermost element
+    for (const el of document.querySelectorAll('[data-component-name*="ercenar"]')) {
+      if (el.closest(`.${ODDS_CLASS}`)) continue;
+      const m = mercOf(el);
+      if (!m || !odds.has(String(m.id))) continue;
+      const had = cards.get(String(m.id));
+      if (!had || el.contains(had)) cards.set(String(m.id), el);
+    }
+    const known = [...cards.keys()].map((id) => [id, odds.get(id)]);
+    // Safest first: lowest death chance, then lowest fail chance, then cheapest.
+    known.sort((a, b) => a[1].death - b[1].death || (a[1].fail ?? 0) - (b[1].fail ?? 0) || (a[1].cost ?? 0) - (b[1].cost ?? 0));
+    const best = known.length > 1 ? known[0][0] : null;
+    for (const [id, el] of cards) {
+      const o = odds.get(id);
+      const text = `${id === best ? "\u2605 " : ""}Death ${pct(o.death)}${o.fail != null ? ` \u00b7 Fail, survives ${pct(o.fail)}` : ""}`;
+      let line = el.querySelector(`:scope > .${ODDS_CLASS}`);
+      if (!line) {
+        line = document.createElement("div");
+        line.className = ODDS_CLASS;
+        line.style.cssText = "font-size:11px;font-weight:700;margin-top:4px;white-space:nowrap";
+        el.appendChild(line);
+      }
+      if (line.textContent !== text) line.textContent = text;
+      line.style.color = o.death >= 10 ? RED : id === best ? GREEN : AMBER;
+      line.title = id === best ? "lowest death chance of the mercenaries you've looked at" : "chance this mercenary dies, or fails and comes back";
+    }
+  }
+
   // The popup only lives while hovering, so react to DOM changes, not a timer.
   let queued = false;
   function run() {
     queued = false;
     if (!state.enabled) return;
-    try { annotatePopups(); annotateRiskScore(); }
+    try { annotatePopups(); annotateRiskScore(); annotateMercs(); }
     catch (e) { console.warn("[expeditions helper]", e); }
   };
   new MutationObserver(() => {

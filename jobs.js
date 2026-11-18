@@ -102,6 +102,8 @@
   try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY) || "{}")); } catch (_) {}
   // Raw copies of the last job lists, for checking in the console (window.__cor3JobTracker).
   const debug = { lastJobs: null, lastRecentJobs: null };
+  // Job offers from the last market read (not stored; the market resends them).
+  let offers = [];
   window.__cor3JobTracker = { debug, state };
   const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (_) {} };
 
@@ -153,10 +155,26 @@
       state.market = { ...(state.market || {}), resetAt: node.nextJobsResetAt };
       changed = true;
     }
+    // The network map's links between servers, for working out routes.
+    if (Array.isArray(node.servers) && Array.isArray(node.connections)) {
+      const ip = {};
+      let home = null;
+      for (const s of node.servers) {
+        if (!s || s.id == null || typeof s.serverIp !== "string") continue;
+        ip[s.id] = s.serverIp;
+        if (s.serverTypeName === "Home" || s.serverName === "Home Server") home = s.serverIp;
+      }
+      const links = [];
+      for (const c of node.connections) {
+        if (c && ip[c.serverA] && ip[c.serverB]) links.push([ip[c.serverA], ip[c.serverB]]);
+      }
+      if (home && links.length) { state.net = { home, links, at: Date.now() }; changed = true; }
+    }
     if (Array.isArray(node.jobs)) {
       // Offers in the market's job tab (not taken yet).
       state.market = { ...(state.market || {}), offers: node.jobs.length, at: Date.now() };
       debug.lastJobs = node.jobs;
+      offers = node.jobs.filter((j) => j && typeof j === "object");
       changed = true;
     }
     if (Array.isArray(node.recentJobs)) {
@@ -265,6 +283,8 @@
     label.chk span { text-decoration: line-through; opacity: .6; }
     .srv { display: flex; flex-wrap: wrap; gap: 3px 6px; align-items: center; }
     .srv .ip { flex: 1 1 150px; word-break: break-all; }
+    .route { color: #7f9aa3; font-size: 10px; margin: 0 0 2px 8px; word-break: break-all; }
+    .route .hop { color: #ffa040; }
     .empty { color: #7f9aa3; padding: 8px 0; }
     .desc { color: #9fb6bd; margin-top: 2px; }
   `;
@@ -397,15 +417,113 @@
     return out;
   }
 
+  // ---------- routes ----------
+  // A server you don't have access to is still within reach when there is a
+  // way to it from Home through servers you can pass: ones you have access to,
+  // or ones your HACK power beats, and none in maintenance. Fewer hacks win,
+  // then fewer hops.
+  const inMaint = (s) => s.isInMaintenance && !(toMs(s.maintenanceEndsAt) <= Date.now());
+  function canHack(s, hack) {
+    const def = s.serverDefenceRate;
+    if (typeof def !== "number" || def <= 0) return true;
+    return hack == null ? null : hack >= def;
+  }
+  function neighbours() {
+    const adj = {};
+    for (const [a, b] of state.net?.links || []) {
+      (adj[a] = adj[a] || []).push(b);
+      (adj[b] = adj[b] || []).push(a);
+    }
+    return adj;
+  }
+  // Cheapest route from Home to target (IPs, Home and target included), or
+  // null. With pass = () => true it finds the shortest route of all.
+  function cheapest(target, adj, pass) {
+    const home = state.net.home;
+    const dist = { [home]: 0 }, prev = {}, done = new Set();
+    for (;;) {
+      let cur = null;
+      for (const k in dist) if (!done.has(k) && (cur == null || dist[k] < dist[cur])) cur = k;
+      if (cur == null) return null;
+      if (cur === target) break;
+      done.add(cur);
+      for (const nb of adj[cur] || []) {
+        if (done.has(nb)) continue;
+        const cost = nb === target ? 1 : pass(nb);
+        if (cost == null) continue;
+        if (dist[nb] == null || dist[cur] + cost < dist[nb]) { dist[nb] = dist[cur] + cost; prev[nb] = cur; }
+      }
+    }
+    const path = [target];
+    while (path[0] !== home) path.unshift(prev[path[0]]);
+    return path;
+  }
+
+  // Can you get into this server now, keeping the route in mind?
+  // { ok: true | false | null (don't know yet), cls, text, tip, route }
+  function reach(s) {
+    if (!s) return { ok: null, cls: "", text: "? unknown", tip: "open the network map so the tracker can see this server" };
+    if (inMaint(s)) return { ok: false, cls: "warn", text: "", tip: "in maintenance" };
+    if (s.hasAdminAccess) return { ok: true, cls: "ok", text: "admin", tip: "admin access" };
+    if (s.isAccessible) return { ok: true, cls: "ok", text: "access", tip: "access" };
+    const hack = hackPower();
+    const target = canHack(s, hack);
+    const hackTip = target == null ? "open your Loadout to compare its defence with your HACK power" : "";
+    if (!state.net?.home || !state.servers[state.net.home]) {
+      // No links known yet: fall back to what the game says.
+      return s.isReachable
+        ? { ok: target, cls: "bad", text: "no access", tip: "no access" }
+        : { ok: null, cls: "bad", text: "unreachable", tip: "unreachable; open the network map to work out a route" };
+    }
+    const adj = neighbours();
+    let unsure = false;
+    const route = cheapest(s.serverIp, adj, (ip) => {
+      const h = state.servers[ip];
+      if (!h || inMaint(h)) return null;
+      if (h.isAccessible || ip === state.net.home) return 1;
+      const c = canHack(h, hack);
+      if (c === false) return null;
+      if (c == null) unsure = true;
+      return 10; // a hack on the way
+    });
+    if (!route) {
+      // Name the first server that blocks the shortest route.
+      const any = cheapest(s.serverIp, adj, () => 1);
+      let why = "no route from Home on your network map";
+      for (const ip of (any || []).slice(1, -1)) {
+        const h = state.servers[ip];
+        if (!h) continue;
+        if (inMaint(h)) { const l = shortLeft(h.maintenanceEndsAt); why = `${h.serverName || ip} is in maintenance${l ? ` (${l} left)` : ""}`; break; }
+        if (canHack(h, hack) === false && !h.isAccessible) { why = `${h.serverName || ip} defence ${h.serverDefenceRate} is above your HACK ${hack}`; break; }
+      }
+      return { ok: false, cls: "bad", text: "no route", tip: why };
+    }
+    const hops = route.slice(1, -1).filter((ip) => !state.servers[ip]?.isAccessible && ip !== state.net.home);
+    const ok = target === false ? false : unsure || target == null ? null : true;
+    const text = s.isReachable || !hops.length ? "no access" : `via ${hops.length} hack${hops.length > 1 ? "s" : ""}`;
+    const tip = (hops.length ? `hack on the way: ${hops.map((ip) => state.servers[ip]?.serverName || ip).join(", ")}` : "reachable, no access yet") +
+      (hackTip ? `; ${hackTip}` : "");
+    return { ok, cls: ok === false ? "bad" : "warn", text, tip, route };
+  }
+
+  // The route as a short line, e.g. "Home → RM7-S4L2 → 10.0.0.7", with servers
+  // you still have to hack in orange.
+  function routeLine(route) {
+    return route.map((ip, i) => {
+      const s = state.servers[ip] || {};
+      const name = esc(i === 0 ? "Home" : s.serverName || ip);
+      return i && i < route.length - 1 && !s.isAccessible ? `<span class="hop">${name}</span>` : name;
+    }).join(" &rarr; ");
+  }
+
+  window.__cor3JobTracker.reach = (ip) => reach(state.servers[ip]);
+
   function accessBadge(rs) {
     const s = findServer(rs);
-    if (!s) return `<span class="badge" title="Open the network map so the tracker can see this server">? unknown</span>`;
+    const r = reach(s);
+    if (!s) return `<span class="badge" title="${esc(r.tip)}">${r.text}</span>`;
     const extra = serverInfo(s).map((i) => `<span class="badge ${i.cls}" title="${esc(i.tip)}">${i.text}</span>`).join("");
-    if (s.isInMaintenance) return extra;
-    if (s.hasAdminAccess) return `<span class="badge ok">admin</span>${extra}`;
-    if (s.isAccessible) return `<span class="badge ok">access</span>${extra}`;
-    if (s.isReachable) return `<span class="badge bad">no access</span>${extra}`;
-    return `<span class="badge bad">unreachable</span>${extra}`;
+    return (r.text ? `<span class="badge ${r.cls}" title="${esc(r.tip)}">${r.text}</span>` : "") + extra;
   }
 
   function render() {
@@ -455,6 +573,8 @@
           html += `<div class="sec">Servers</div>`;
           for (const rs of servers) {
             html += `<div class="srv"><span class="ip">${esc(rs.serverName ?? "")}${rs.serverName && rs.serverIp ? " &middot; " : ""}${esc(rs.serverIp ?? "")}</span>${accessBadge(rs)}</div>`;
+            const r = reach(findServer(rs));
+            if (r.route && r.route.length > 2 && r.text !== "no access") html += `<div class="route">${routeLine(r.route)}</div>`;
           }
         }
         html += `</div>`;
@@ -544,36 +664,75 @@
 
   function markFor(s) {
     if (!s) return null;
-    const m = s.isInMaintenance ? { ch: "&#9888;", color: "#ffa040", tip: "" }
-      : s.hasAdminAccess ? { ch: "&#10003;", color: "#5df0a0", tip: "admin access" }
-      : s.isAccessible ? { ch: "&#10003;", color: "#5df0a0", tip: "access" }
-      : { ch: "&#10007;", color: "#ff8a70", tip: s.isReachable ? "no access" : "unreachable" };
-    // Tooltip: maintenance times and defence, as in the panel.
-    const extra = serverInfo(s).map((i) => i.text.replace(/ &#1000[37];/, ""));
-    m.tip = [m.tip, ...extra].filter(Boolean).join(", ");
+    const r = reach(s);
+    const m = inMaint(s) ? { ch: "&#9888;", color: "#ffa040", tip: "" }
+      : r.ok === true && (s.isAccessible || s.hasAdminAccess) ? { ch: "&#10003;", color: "#5df0a0", tip: r.tip }
+      : r.ok === false ? { ch: "&#10007;", color: "#ff8a70", tip: r.tip }
+      : { ch: "&#8618;", color: "#ffc800", tip: r.tip };
+    // Tooltip: the route, maintenance times and defence, as in the panel.
+    const route = r.route && r.route.length > 2 ? r.route.map((ip, i) => (i ? state.servers[ip]?.serverName || ip : "Home")).join(" > ") : "";
+    const extra = serverInfo(s).map((i) => i.text.replace(/ &#1000[37];/, "").replace(/&middot;/g, "-"));
+    m.tip = [m.tip, route && `route ${route}`, ...extra].filter(Boolean).join(", ");
+    m.ok = r.ok;
     return m;
   }
 
+  // Credits for the job on a card: the offer with the same servers (and name,
+  // when several share them). null when it can't be told apart.
+  function cardCredits(el, tokens) {
+    const want = new Set(tokens.map((t) => t.toLowerCase()));
+    let hits = offers.filter((o) => {
+      const rs = Array.isArray(o.relatedServers) ? o.relatedServers : [];
+      return rs.length === want.size && rs.every((x) =>
+        want.has(String(x?.serverName || "").toLowerCase()) || want.has(String(x?.serverIp || "").toLowerCase()));
+    });
+    if (hits.length > 1) {
+      const card = el.closest('[data-component-name="JobCardCollapsed"]') || el.parentElement?.parentElement;
+      const text = card ? card.textContent : "";
+      const named = hits.filter((o) => o.name && text.includes(o.name));
+      if (named.length) hits = named;
+    }
+    const credits = [...new Set(hits.map((o) => o.rewardCredits).filter((c) => typeof c === "number"))];
+    return credits.length === 1 ? credits[0] : null;
+  }
+
+  const TAG_STYLE = "margin-left:6px;padding:0 4px;border-radius:3px;font-size:10px;font-weight:700;" +
+    "background:#144d30;color:#5df0a0";
+
   function annotateJobCards() {
     const known = Object.keys(state.servers).length;
+    const cards = [];
     for (const { el, list } of serverLines()) {
       const tokens = list.split(",").map((t) => t.trim()).filter((t) => t && t !== "N/A");
       let mark = el.querySelector(`:scope > .${MARK_CLASS}`);
       if (!tokens.length) { if (mark) mark.remove(); continue; }
 
-      const html = tokens.map((t) => {
-        const m = markFor(lookupServer(t));
+      const marks = tokens.map((t) => markFor(lookupServer(t)));
+      const html = tokens.map((t, i) => {
+        const m = marks[i];
         return m
-          ? `<span title="${esc(t)}: ${m.tip}" style="color:${m.color};font-weight:700">${m.ch}</span>`
+          ? `<span title="${esc(t)}: ${esc(m.tip)}" style="color:${m.color};font-weight:700">${m.ch}</span>`
           : `<span title="${esc(t)}: unknown, not among the ${known} servers on your network map yet" style="color:#7f9aa3;font-weight:700">?</span>`;
       }).join(" ");
+      // Doable now: every server is yours, or reachable with a HACK that beats it.
+      const doable = marks.every((m) => m && m.ok === true);
       if (!mark) {
         mark = document.createElement("span");
         mark.className = MARK_CLASS;
         mark.style.marginLeft = "6px";
         el.appendChild(mark);
       }
-      if (mark.innerHTML !== html) mark.innerHTML = html;
+      cards.push({ mark, html, doable, credits: doable ? cardCredits(el, tokens) : null });
+    }
+    // The best-paying doable job gets a star.
+    const best = Math.max(...cards.map((c) => c.credits ?? -Infinity));
+    for (const c of cards) {
+      const star = c.credits != null && c.credits === best && cards.filter((x) => x.doable).length > 1;
+      const tag = c.doable
+        ? `<span style="${TAG_STYLE}" title="${star ? "best-paying job you can do now" : "you can do this job now: every server is yours or within reach"}">${star ? "&#9733; " : ""}DOABLE</span>`
+        : "";
+      const html = c.html + tag;
+      if (c.mark.innerHTML !== html) c.mark.innerHTML = html;
     }
   }
 
