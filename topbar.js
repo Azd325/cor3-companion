@@ -136,7 +136,7 @@
   }
 
   function barHtml() {
-    if (state.min) return `<button class="seg logo" data-act="min" title="Show the COR3 Helper bar">&#9670;</button>`;
+    if (state.min) return `<button class="seg logo" data-act="min" title="Show the COR3 Companion bar">&#9670;</button>`;
     const parts = [`<button class="seg logo" data-act="min" title="Shrink the bar (Alt+B hides it)">&#9670; COR3</button>`];
 
     const j = jobsInfo();
