@@ -3,8 +3,8 @@
 // Output in dist/:
 //   chrome/                     folder for chrome://extensions > "Load unpacked"
 //   firefox/                    folder for about:debugging or `web-ext sign`
-//   cor3-helper-chrome.zip
-//   cor3-helper-firefox.xpi
+//   cor3-companion-chrome.zip
+//   cor3-companion-firefox.xpi
 import { readFileSync, writeFileSync, mkdirSync, rmSync, copyFileSync } from "node:fs";
 import { deflateRawSync } from "node:zlib";
 import { join, dirname } from "node:path";
@@ -13,8 +13,9 @@ import { fileURLToPath } from "node:url";
 const root = dirname(fileURLToPath(import.meta.url));
 const dist = join(root, "dist");
 const FILES = [
-  "jobs.js", "loadout.js", "solver.js", "expeditions.js", "popup.html", "popup.js",
+  "toggles.js", "bridge.js", "jobs.js", "loadout.js", "solver.js", "expeditions.js", "topbar.js", "popup.html", "popup.js",
   "icons/icon-16.png", "icons/icon-32.png", "icons/icon-48.png", "icons/icon-128.png",
+  "update-check.js",
 ];
 const base = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8"));
 
@@ -89,7 +90,7 @@ for (const [name, manifest] of Object.entries(targets)) {
     { name: "manifest.json", data: manifestBuf },
     ...FILES.map((f) => ({ name: f, data: readFileSync(join(root, f)) })),
   ];
-  const out = join(dist, name === "chrome" ? "cor3-helper-chrome.zip" : "cor3-helper-firefox.xpi");
+  const out = join(dist, name === "chrome" ? "cor3-companion-chrome.zip" : "cor3-companion-firefox.xpi");
   writeFileSync(out, zip(entries));
   console.log(`built ${name}: dist/${name}/ and ${out.slice(root.length + 1)}`);
 }

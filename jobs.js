@@ -78,6 +78,24 @@
     return read();
   }
 
+  // ---------- times ----------
+  // Game times arrive as Date (msgpack) or ISO strings (JSON / localStorage).
+  function toMs(v) {
+    if (v instanceof Date) return v.getTime();
+    if (typeof v === "string") { const t = Date.parse(v); return Number.isFinite(t) ? t : NaN; }
+    if (typeof v === "number" && v > 1e12) return v;
+    return NaN;
+  }
+  // "2h 05m", "12m", "40s"; null when the time is unknown or past.
+  function shortLeft(v) {
+    const ms = toMs(v) - Date.now();
+    if (!(ms > 0)) return null;
+    const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    if (h) return `${h}h ${String(m).padStart(2, "0")}m`;
+    if (m) return `${m}m`;
+    return `${s}s`;
+  }
+
   // ---------- state ----------
   const STORE_KEY = "cor3-job-tracker";
   const state = { jobs: {}, servers: {}, checks: {}, panel: { x: 20, y: 80, open: true, min: false } };
@@ -118,9 +136,26 @@
         changed = true;
       }
     }
+    // A server went into maintenance (push event).
+    if (action === "maintenance" && d) {
+      const s = Object.values(state.servers).find((x) =>
+        (d.serverId != null && x.id === d.serverId) || (d.id != null && x.id === d.id) ||
+        (d.serverIp && x.serverIp === d.serverIp));
+      if (s) {
+        s.isInMaintenance = true;
+        if (d.maintenanceEndsAt) s.maintenanceEndsAt = d.maintenanceEndsAt;
+        s.timeUntilMaintenance = null;
+        changed = true;
+      }
+    }
+    // When the market's jobs reset next.
+    if (node.nextJobsResetAt && toMs(node.nextJobsResetAt) > 0) {
+      state.market = { ...(state.market || {}), resetAt: node.nextJobsResetAt };
+      changed = true;
+    }
     if (Array.isArray(node.jobs)) {
       // Offers in the market's job tab (not taken yet).
-      state.market = { offers: node.jobs.length, at: Date.now() };
+      state.market = { ...(state.market || {}), offers: node.jobs.length, at: Date.now() };
       debug.lastJobs = node.jobs;
       changed = true;
     }
@@ -143,12 +178,18 @@
       changed = true;
     }
     if (isServer(node)) {
+      const old = state.servers[node.serverIp] || {};
       const s = {
         id: node.id, serverIp: node.serverIp, serverName: node.serverName,
         isAccessible: node.isAccessible, isReachable: node.isReachable,
         hasAdminAccess: node.hasAdminAccess, isInMaintenance: node.isInMaintenance,
         _seen: Date.now(),
       };
+      // Network map extras; smaller server objects in other events leave them out.
+      for (const k of ["maintenanceEndsAt", "timeUntilMaintenance", "serverDefenceRate", "serverTypeName"]) {
+        s[k] = k in node ? node[k] : old[k];
+      }
+      if (!s.isInMaintenance && "isInMaintenance" in node) s.maintenanceEndsAt = null;
       state.servers[node.serverIp] = s;
       changed = true;
     }
@@ -201,12 +242,13 @@
   const CSS = `
     :host { all: initial; }
     .p { position: fixed; z-index: 2147483646; width: 340px; max-height: 70vh; display: flex; flex-direction: column;
-         background: rgba(8,16,22,.95); border: 1px solid #2d4a55; border-radius: 6px; color: #cfe7ee;
-         font: 12px/1.4 ui-monospace, Consolas, monospace; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
-    .h { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: #10222b; cursor: move;
-         border-bottom: 1px solid #2d4a55; user-select: none; border-radius: 6px 6px 0 0; }
-    .h b { flex: 1; color: #76c1d1; letter-spacing: .05em; }
-    .h button { background: none; border: 1px solid #2d4a55; color: #9fc; cursor: pointer; border-radius: 3px; font: inherit; padding: 0 6px; }
+         background: rgba(8,16,22,.92); border: 1px solid #2d4a55; border-radius: 6px; color: #cfe7ee;
+         font: 11px/1.45 ui-monospace, Consolas, monospace; box-shadow: 0 4px 14px rgba(0,0,0,.45); }
+    .h { display: flex; align-items: stretch; height: 22px; line-height: 22px; cursor: move; user-select: none;
+         border-bottom: 1px solid #2d4a55; }
+    .h b { flex: 1; padding: 0 8px; color: #76c1d1; letter-spacing: .05em; }
+    .h button { all: unset; padding: 0 8px; border-left: 1px solid #1d3640; color: #cfe7ee; cursor: pointer; }
+    .h button:hover { background: #10222b; }
     .b { overflow: auto; padding: 6px 8px; }
     .job { border: 1px solid #22363f; border-radius: 4px; padding: 6px; margin-bottom: 6px; }
     .job.ready { border-color: #2fae6a; }
@@ -221,13 +263,13 @@
     .sec { margin-top: 4px; color: #7f9aa3; font-size: 10px; text-transform: uppercase; }
     label { display: flex; gap: 6px; align-items: center; cursor: pointer; word-break: break-all; }
     label.chk span { text-decoration: line-through; opacity: .6; }
-    .srv { display: flex; gap: 6px; align-items: center; }
-    .srv .ip { flex: 1; word-break: break-all; }
+    .srv { display: flex; flex-wrap: wrap; gap: 3px 6px; align-items: center; }
+    .srv .ip { flex: 1 1 150px; word-break: break-all; }
     .empty { color: #7f9aa3; padding: 8px 0; }
     .desc { color: #9fb6bd; margin-top: 2px; }
   `;
 
-  let host, root, panel;
+  let host, root, panel, lastHtml = "";
   function ensurePanel() {
     if (panel && document.documentElement.contains(host)) return true;
     if (!document.body) return false;
@@ -245,6 +287,7 @@
     }
     panel = document.createElement("div");
     panel.className = "p";
+    lastHtml = "";
     root.appendChild(panel);
     document.body.appendChild(host);
 
@@ -314,14 +357,55 @@
       (rs.id && s.id === rs.id) || (rs.serverName && s.serverName === rs.serverName)) || null;
   }
 
+  // Maintenance starting within this time gets a warning.
+  const SOON_MS = 2 * 3600 * 1000;
+
+  // Your best HACK power, from the loadout the loadout helper last saw.
+  function hackPower() {
+    const sp = window.__cor3Loadout?.state?.loadout?.resources?.softwarePower;
+    let best = null;
+    for (const p of Array.isArray(sp) ? sp : []) {
+      for (const a of p?.abilities || []) {
+        if (String(a?.type).toUpperCase() === "HACK" && typeof a.computedPower === "number") {
+          best = Math.max(best ?? 0, a.computedPower);
+        }
+      }
+    }
+    return best;
+  }
+
+  // Extra facts about a server: maintenance times and defence against your HACK power.
+  function serverInfo(s) {
+    const out = [];
+    if (s.isInMaintenance) {
+      const left = shortLeft(s.maintenanceEndsAt);
+      out.push({ cls: "warn", text: left ? `maintenance, ${left} left` : "maintenance", tip: "in maintenance" });
+    } else {
+      const ms = toMs(s.timeUntilMaintenance) - Date.now();
+      if (ms > 0 && ms < SOON_MS) {
+        out.push({ cls: "warn", text: `maint. in ${shortLeft(s.timeUntilMaintenance)}`, tip: "maintenance starts soon" });
+      }
+    }
+    const def = s.serverDefenceRate;
+    if (!s.isAccessible && typeof def === "number" && def > 0) {
+      const hack = hackPower();
+      out.push(hack == null
+        ? { cls: "", text: `DEF ${def}`, tip: "defence rate; open your Loadout to compare with your HACK power" }
+        : { cls: hack >= def ? "ok" : "bad", text: `DEF ${def} · HACK ${hack} ${hack >= def ? "&#10003;" : "&#10007;"}`,
+            tip: hack >= def ? "your best HACK power beats the defence rate" : "your best HACK power is below the defence rate" });
+    }
+    return out;
+  }
+
   function accessBadge(rs) {
     const s = findServer(rs);
     if (!s) return `<span class="badge" title="Open the network map so the tracker can see this server">? unknown</span>`;
-    if (s.isInMaintenance) return `<span class="badge warn">maintenance</span>`;
-    if (s.hasAdminAccess) return `<span class="badge ok">admin</span>`;
-    if (s.isAccessible) return `<span class="badge ok">access</span>`;
-    if (s.isReachable) return `<span class="badge bad">no access</span>`;
-    return `<span class="badge bad">unreachable</span>`;
+    const extra = serverInfo(s).map((i) => `<span class="badge ${i.cls}" title="${esc(i.tip)}">${i.text}</span>`).join("");
+    if (s.isInMaintenance) return extra;
+    if (s.hasAdminAccess) return `<span class="badge ok">admin</span>${extra}`;
+    if (s.isAccessible) return `<span class="badge ok">access</span>${extra}`;
+    if (s.isReachable) return `<span class="badge bad">no access</span>${extra}`;
+    return `<span class="badge bad">unreachable</span>${extra}`;
   }
 
   function render() {
@@ -337,7 +421,7 @@
     });
     const active = jobs.filter((j) => j.status === "TAKEN").length;
 
-    let html = `<div class="h"><b>JOBS (${active})</b>
+    let html = `<div class="h"><b>&#9670; JOBS (${active})</b>
       <button data-act="clear" title="Forget stored jobs">clear</button>
       <button data-act="min">${state.panel.min ? "+" : "&ndash;"}</button>
       <button data-act="close" title="Alt+J to reopen">&times;</button></div>`;
@@ -356,7 +440,7 @@
         html += `<div class="job ${j.canComplete ? "ready" : ""} ${done ? "done" : ""}">
           <div class="t"><span class="n">${esc(j.name || j.id)}</span>
             ${j.canComplete ? `<span class="badge ok">READY</span>` : `<span class="badge">${esc(j.status)}</span>`}</div>`;
-        if (!done && j.endTime) html += `<div class="time">${esc(timeLeft(j))}</div>`;
+        if (!done && j.endTime) html += `<div class="time" data-end="${esc(j.endTime)}"></div>`;
         if (j.features?.[0]) html += `<div class="desc">${esc(j.features[0])}</div>`;
         if (items.length) {
           html += `<div class="sec">To do</div>`;
@@ -378,13 +462,35 @@
       const seen = Object.keys(state.servers).length;
       const m = state.market;
       const when = m?.at ? new Date(m.at).toTimeString().slice(0, 5) : "";
-      html += `<div class="empty">${m?.at ? `Market (${when}): ${m.offers ?? "?"} offers, ${m.taken ?? "?"} taken.<br>` : ""}${seen} servers known from the network map.</div></div>`;
+      const reset = shortLeft(m?.resetAt);
+      html += `<div class="empty">${m?.at ? `Market (${when}): ${m.offers ?? "?"} offers, ${m.taken ?? "?"} taken.<br>` : ""}${reset ? `Jobs reset in ${reset}.<br>` : ""}${seen} servers known from the network map.</div></div>`;
     }
+    // Rewriting the panel resets its scroll and can swallow a click, so only
+    // write it when something other than the ticking countdowns changed.
+    if (html === lastHtml) return tickTimes();
+    const body = panel.querySelector(".b");
+    const scroll = body ? body.scrollTop : 0;
     panel.innerHTML = html;
+    lastHtml = html;
+    tickTimes();
+    const nb = panel.querySelector(".b");
+    if (nb) nb.scrollTop = scroll;
   }
 
+  // Countdowns update in place, without redrawing the panel.
+  function tickTimes() {
+    if (!panel) return;
+    for (const el of panel.querySelectorAll(".time[data-end]")) {
+      const t = timeLeft({ endTime: el.dataset.end });
+      if (el.textContent !== t) el.textContent = t;
+    }
+  }
+
+  // Alt+J or the toolbar menu shows or hides the panel.
+  const setOpen = (on) => { state.panel.open = on; save(); render(); };
+  (window.__cor3Toggles = window.__cor3Toggles || {}).jobs = { get: () => state.panel.open, set: setOpen };
   window.addEventListener("keydown", (e) => {
-    if (e.altKey && e.key.toLowerCase() === "j") { state.panel.open = !state.panel.open; save(); render(); }
+    if (e.altKey && e.key.toLowerCase() === "j") setOpen(!state.panel.open);
   });
 
   // ---------- access marks on the market's job cards ----------
@@ -438,10 +544,14 @@
 
   function markFor(s) {
     if (!s) return null;
-    if (s.isInMaintenance) return { ch: "&#9888;", color: "#ffa040", tip: "in maintenance" };
-    if (s.hasAdminAccess) return { ch: "&#10003;", color: "#5df0a0", tip: "admin access" };
-    if (s.isAccessible) return { ch: "&#10003;", color: "#5df0a0", tip: "access" };
-    return { ch: "&#10007;", color: "#ff8a70", tip: s.isReachable ? "no access" : "unreachable" };
+    const m = s.isInMaintenance ? { ch: "&#9888;", color: "#ffa040", tip: "" }
+      : s.hasAdminAccess ? { ch: "&#10003;", color: "#5df0a0", tip: "admin access" }
+      : s.isAccessible ? { ch: "&#10003;", color: "#5df0a0", tip: "access" }
+      : { ch: "&#10007;", color: "#ff8a70", tip: s.isReachable ? "no access" : "unreachable" };
+    // Tooltip: maintenance times and defence, as in the panel.
+    const extra = serverInfo(s).map((i) => i.text.replace(/ &#1000[37];/, ""));
+    m.tip = [m.tip, ...extra].filter(Boolean).join(", ");
+    return m;
   }
 
   function annotateJobCards() {

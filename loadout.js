@@ -476,12 +476,15 @@
     annotateMarket(base);
   }
 
+  // Alt+L or the toolbar menu toggles the helper.
+  function setEnabled(on) {
+    state.enabled = on;
+    save();
+    if (!state.enabled) clearAll(); else tick();
+  }
+  (window.__cor3Toggles = window.__cor3Toggles || {}).loadout = { get: () => state.enabled, set: setEnabled };
   window.addEventListener("keydown", (e) => {
-    if (e.altKey && e.key.toLowerCase() === "l") {
-      state.enabled = !state.enabled;
-      save();
-      if (!state.enabled) clearAll(); else tick();
-    }
+    if (e.altKey && e.key.toLowerCase() === "l") setEnabled(!state.enabled);
   });
 
   setInterval(() => {

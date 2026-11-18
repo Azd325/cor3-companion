@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>COR3 Helper</title>
+<title>COR3 Companion</title>
 <style>
   :root { color-scheme: dark; }
   body { margin: 0; width: 300px; background: #08121a; color: #cfe7ee;
@@ -20,7 +20,14 @@
   .desc { color: #9fb6bd; font-size: 11px; }
   kbd { align-self: flex-start; white-space: nowrap; padding: 1px 6px; border: 1px solid #2d4a55;
         border-bottom-width: 2px; border-radius: 4px; background: #10222b; color: #5df0a0; font: inherit; }
-  kbd.none { color: #7f9aa3; border-color: #22363f; }
+  .ctl { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .sw { position: relative; width: 34px; height: 18px; padding: 0; border: 1px solid #2d4a55; border-radius: 9px;
+        background: #16262e; cursor: pointer; }
+  .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%;
+               background: #7f9aa3; transition: left .12s; }
+  .sw[aria-checked="true"] { background: #144d30; border-color: #2fae6a; }
+  .sw[aria-checked="true"]::after { left: 18px; background: #5df0a0; }
+  .sw:disabled { opacity: .35; cursor: default; }
   footer { padding: 8px 12px; color: #7f9aa3; font-size: 11px; border-top: 1px solid #2d4a55; }
   footer a { color: #76c1d1; }
 </style>
@@ -28,25 +35,29 @@
 <body>
 <header>
   <img src="icons/icon-48.png" alt="">
-  <b>COR3 HELPER</b>
+  <b>COR3 COMPANION</b>
   <span id="version"></span>
 </header>
 <ul>
-  <li><div class="txt"><div class="name">ICE WALL Break</div>
+  <li data-id="icewall"><div class="txt"><div class="name">ICE WALL Break</div>
     <div class="desc">Outlines where the target pattern can still fit.</div></div>
-    <kbd>Alt+H</kbd></li>
-  <li><div class="txt"><div class="name">Job tracker</div>
-    <div class="desc">Panel with your taken jobs, to-dos and server access.</div></div>
-    <kbd>Alt+J</kbd></li>
-  <li><div class="txt"><div class="name">Loadout &amp; market</div>
+    <div class="ctl"><button class="sw" role="switch" aria-label="ICE WALL Break"></button><kbd>Alt+H</kbd></div></li>
+  <li data-id="jobs"><div class="txt"><div class="name">Job tracker</div>
+    <div class="desc">Panel with your taken jobs, to-dos, server access, maintenance and defence.</div></div>
+    <div class="ctl"><button class="sw" role="switch" aria-label="Job tracker"></button><kbd>Alt+J</kbd></div></li>
+  <li data-id="loadout"><div class="txt"><div class="name">Loadout &amp; market</div>
     <div class="desc">Shows what programs and hardware do to your setup, and the best upgrade.</div></div>
-    <kbd>Alt+L</kbd></li>
-  <li><div class="txt"><div class="name">Expeditions</div>
-    <div class="desc">Clear risk and rewards in the game's popup when you hover a choice.</div></div>
-    <kbd class="none">always on</kbd></li>
+    <div class="ctl"><button class="sw" role="switch" aria-label="Loadout and market"></button><kbd>Alt+L</kbd></div></li>
+  <li data-id="expeditions"><div class="txt"><div class="name">Expeditions</div>
+    <div class="desc">Exact risk and rewards in the game's popup when you hover a choice.</div></div>
+    <div class="ctl"><button class="sw" role="switch" aria-label="Expeditions"></button><kbd>Alt+E</kbd></div></li>
+  <li data-id="topbar"><div class="txt"><div class="name">Top bar</div>
+    <div class="desc">Thin strip in the game: jobs ready, next deadline, open decisions, helper switches.</div></div>
+    <div class="ctl"><button class="sw" role="switch" aria-label="Top bar"></button><kbd>Alt+B</kbd></div></li>
 </ul>
-<footer>Shortcuts toggle each helper while cor3.gg is open.
-  <a href="https://github.com/nvanderwaal/cor3-helper#readme" target="_blank" rel="noopener">Help</a></footer>
+<footer><span id="hint">Switch a helper here or with its shortcut while cor3.gg is open.</span>
+  <a href="https://github.com/nvanderwaal/cor3-companion#readme" target="_blank" rel="noopener">Help</a></footer>
 <script src="popup.js"></script>
+<script src="update-check.js"></script>
 </body>
 </html>
