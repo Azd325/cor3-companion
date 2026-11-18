@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- COR3 Helper icon: a chip with a lit core -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="#08121a"/>
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="none" stroke="#2d4a55" stroke-width="4"/>
+  <g stroke="#76c1d1" stroke-width="7" stroke-linecap="round">
+    <path d="M48 22v14M64 22v14M80 22v14M48 92v14M64 92v14M80 92v14M22 48h14M22 64h14M22 80h14M92 48h14M92 64h14M92 80h14"/>
+  </g>
+  <rect x="36" y="36" width="56" height="56" rx="10" fill="#10222b" stroke="#76c1d1" stroke-width="7"/>
+  <path d="M64 48l14 8v16l-14 8-14-8V56z" fill="#5df0a0"/>
+</svg>

@@ -161,10 +161,17 @@
     return changed;
   }
 
+  // Other helpers (loadout.js) read the same decoded packets through this list,
+  // so the websocket is hooked only once.
+  const packetListeners = (window.__cor3PacketListeners = window.__cor3PacketListeners || []);
+
   function onPacket(data) {
     try {
       if (scan(data, 0)) { save(); render(); }
     } catch (e) { console.warn("[job tracker]", e); }
+    for (const fn of packetListeners) {
+      try { fn(data); } catch (e) { console.warn("[cor3 helper]", e); }
+    }
   }
 
   // ---------- websocket hook ----------
