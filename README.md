@@ -123,6 +123,8 @@ When a drone event asks for a decision, hovering an option shows the game's popu
 **Rewards** chevrons, which are small and coloured the wrong way round ("risk up" is green). The helper
 makes that popup clear:
 
+<img src="docs/expeditions.png" alt="Events panel with an option's popup showing Trade-off: +30 loot for +10 risk, Mission risk 16 → 26 and the time left to decide" width="620">
+
 - After each word it writes what changes and by how much, in the right colour: Risk **HIGHER +8** (red),
   **LOWER −20** (green) or **SAME**; Rewards **MORE +3** (green), **LESS −2** (red) or **SAME**.
 - A line under it sums the option up: **★ No downside**, **Trade-off: +3 loot for +8 risk**,
