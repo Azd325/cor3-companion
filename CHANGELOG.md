@@ -21,6 +21,11 @@ and uses it as the release notes. Leave out headings that have nothing under the
 - Needs **Firefox 140** or newer (Firefox for Android 142), the versions that support the add-on's
   "collects no data" label.
 
+## 1.2.10 (skipped)
+
+Not released: the release run was stopped while Firefox Add-ons was reviewing this version, which uses up the
+version number. Its changes ship in the next version.
+
 ## 1.2.9 (skipped)
 
 Not released on GitHub: the release run sent this version to Firefox Add-ons for review, then stopped before

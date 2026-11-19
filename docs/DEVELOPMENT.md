@@ -69,7 +69,7 @@ version. `.github/workflows/release.yml` then:
    (`node scripts/chrome-upload.mjs`). A version still in review is withdrawn and replaced.
 
 Both stores review new versions. Mozilla usually approves within minutes; if it wants a human review,
-the run waits 12 minutes, then releases without the `.xpi` and AMO publishes it once approved. Google's
+the run waits 5 minutes, then releases without the `.xpi` and AMO publishes it once approved. Google's
 review takes from hours to a few days, after which Chrome copies update by themselves.
 
 Store listings, screenshots and the privacy tab answers are in [`store/`](../store/listing.md).
@@ -79,9 +79,11 @@ The privacy policy is [`PRIVACY.md`](../PRIVACY.md).
 `CHANGELOG.md`, under **New**, **Improved** or **Fixed**, written for players. That's what the release
 page shows for that version.
 
-A run takes 3–5 minutes,
-most of it "Waiting for approval..." while Mozilla signs; don't cancel it, a signed version can't be
-signed again. Pull after a release, since the workflow pushes the version commit to `main`.
+A run takes 3–8 minutes, most of it "Waiting for approval..." while Mozilla signs. **Don't cancel it**:
+once "Build and sign" has started, Mozilla has that version number and it can't be used again. If a run was
+cancelled or failed after that point anyway, set `version` in `src/manifest.json` to the number it used
+(see the run's "Bump version" step) and merge that, so the next run moves past it.
+Pull after a release, since the workflow pushes the version commit to `main`.
 
 It needs these repository secrets (Settings > Secrets and variables > Actions):
 
