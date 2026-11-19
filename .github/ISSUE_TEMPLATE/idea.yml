@@ -1,0 +1,23 @@
+name: Helper idea
+description: Suggest a new helper or a way to make one better.
+labels: ["idea"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What should it do?
+      description: Describe the helper or the change in a few lines.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help?
+      description: The part of the game that is slow, confusing or easy to get wrong today.
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot or sketch
+      description: Optional. A screenshot of the game screen it's about, or a rough sketch.

@@ -1,0 +1,42 @@
+name: Bug
+description: Something in COR3 Companion is broken or looks wrong.
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Firefox
+        - Chrome
+        - Edge
+        - Brave
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      description: Click the COR3 Companion icon in your toolbar. The version is shown in the menu, for example v1.2.8.
+      placeholder: v1.2.8
+    validations:
+      required: true
+  - type: textarea
+    id: what-broke
+    attributes:
+      label: What broke?
+      description: Which helper, what you did, and what happened instead of what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Drag an image in here if you can. It helps a lot.
+  - type: checkboxes
+    id: game-update
+    attributes:
+      label: Game update
+      options:
+        - label: This started right after cor3.gg changed or updated.
