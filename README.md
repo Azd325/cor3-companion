@@ -191,6 +191,8 @@ Click **◆ COR3** to shrink the bar to a single diamond, or press Alt+B to hide
 
 ## Inventory
 
+<img src="docs/inventory.png" alt="Inventory with the stash value line, each item's sell price in its corner and rarity borders" width="336">
+
 When you open your inventory, every item you can sell gets its sell price in its corner, e.g. **12k cr**.
 Items also get a border in their rarity colour, using the rarity the game gives each item: blue for rare,
 purple for epic, orange for legendary and green for quest items. Common items keep the game's own look.
