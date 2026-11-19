@@ -8,7 +8,7 @@
 // websocket hook in shared/socket.js) and React props; it never sends anything.
 (() => {
   "use strict";
-  const { esc, findProps, load, save: store } = window.__cor3;
+  const { esc, findProps, load, save: store, saveSoon, check, shape } = window.__cor3;
 
   // ---------- game model (mirrors the game's loadout code) ----------
   const RES = [
@@ -111,7 +111,9 @@
     if (node instanceof Uint8Array || node instanceof Date) return;
     if (Array.isArray(node)) { for (const x of node) scan(x, depth + 1); return; }
     const d = node.data;
-    if (node.event?.name === "loadout" && d && typeof d === "object" && d.resources && d.equippedHardware) {
+    const isLoadout = node.event?.name === "loadout" && d && typeof d === "object" && !Array.isArray(d);
+    if (isLoadout) check("loadout", "loadout data", !!(d.resources && d.equippedHardware), shape(d));
+    if (isLoadout && d.resources && d.equippedHardware) {
       state.loadout = {
         ownedSoftware: d.ownedSoftware || [],
         equippedHardware: d.equippedHardware || {},
@@ -119,10 +121,15 @@
         resources: d.resources,
         at: Date.now(),
       };
-      save();
+      // Kept, so the notes are there as soon as the game opens again.
+      saveSoon(STORE_KEY, state);
+      changed = true;
       return;
     }
     if (Array.isArray(node.lots)) {
+      check("loadout", "market lots", !node.lots.length || node.lots.some((l) => l && l.details && typeof l.details === "object"),
+        shape(node.lots[0]));
+      if (node.lots.length) changed = true;
       for (const l of node.lots) {
         const name = l?.details?.name ?? l?.offer;
         if (name && l.details) lots.set(norm(name), l);
@@ -133,7 +140,13 @@
       if (v && typeof v === "object") scan(v, depth + 1);
     }
   }
-  window.__cor3.onPacket(scan);
+  // Redraw the notes as soon as new data came in.
+  let changed = false;
+  window.__cor3.onPacket((data) => {
+    changed = false;
+    scan(data, 0);
+    if (changed) tick();
+  });
 
   // ---------- scenarios ----------
   // A scenario is a loadout: supply, demand and the installed programs.
@@ -470,7 +483,6 @@
     if (!state.enabled) clearAll(); else tick();
   });
 
-  setInterval(() => {
-    try { tick(); } catch (e) { console.warn("[loadout helper]", e); }
-  }, 700);
+  // The notes follow the game's page: when cards appear or change.
+  window.__cor3.onDom(tick, 250);
 })();

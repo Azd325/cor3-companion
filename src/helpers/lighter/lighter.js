@@ -36,6 +36,6 @@
   });
 
   // The game adds videos as you move around (the fog when you open the map).
-  setInterval(() => { if (state.enabled) apply(); }, 2000);
+  window.__cor3.every(2000, () => { if (state.enabled) apply(); }, "lighter screen");
   apply();
 })();

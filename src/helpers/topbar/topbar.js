@@ -164,16 +164,25 @@
         : `<button class="seg" data-act="decision" title="Open the expedition in the game">Expedition back in <span class="t">${x.text}</span></button>`);
     }
 
-    parts.push(`<button class="seg" data-act="helpers" title="Switch helpers">Helpers &#9662;</button>`);
+    // A helper whose game data changed shape: a quiet mark on the Helpers
+    // button; the menu says which one.
+    const n = Object.keys(window.__cor3.warnings()).length;
+    parts.push(n
+      ? `<button class="seg" data-act="helpers" title="The game changed: ${n === 1 ? "a helper" : `${n} helpers`} may show wrong or no info until an update">Helpers <span class="warn">&#9888;</span> &#9662;</button>`
+      : `<button class="seg" data-act="helpers" title="Switch helpers">Helpers &#9662;</button>`);
     return parts.join("");
   }
 
   function menuHtml() {
     const t = toggles();
+    const warn = window.__cor3.warnings();
     return HELPERS.filter(({ id }) => t[id]).map(({ id, name, key }) => {
       let on = false;
       try { on = !!t[id].get(); } catch (_) {}
-      return `<button class="row" data-id="${id}"><span class="sw ${on ? "on" : ""}"></span><span class="n">${esc(name)}</span><kbd>Alt+${key}</kbd></button>`;
+      const w = warn[id]
+        ? ` <span class="warn" title="The game's ${esc(warn[id])} changed. This helper may show wrong or no info until COR3 Companion is updated.">&#9888;</span>`
+        : "";
+      return `<button class="row" data-id="${id}"><span class="sw ${on ? "on" : ""}"></span><span class="n">${esc(name)}${w}</span><kbd>Alt+${key}</kbd></button>`;
     }).join("");
   }
 
@@ -230,6 +239,8 @@
   // Alt+B or the toolbar menu shows or hides the bar.
   window.__cor3.helper("topbar", () => state.open, (on) => { state.open = on; if (!on) openMenu = null; save(); render(true); });
 
-  setInterval(() => { try { render(false); } catch (e) { console.warn("[cor3 topbar]", e); } }, 1000);
+  // Countdowns tick once a second; new jobs, decisions or warnings show at once.
+  window.__cor3.every(1000, () => render(false), "cor3 topbar");
+  for (const topic of ["jobs", "expeditions", "health"]) window.__cor3.on(topic, () => render(false));
   render(true);
 })();

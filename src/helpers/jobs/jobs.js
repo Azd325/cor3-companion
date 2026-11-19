@@ -5,7 +5,7 @@
 (() => {
   "use strict";
 
-  const { esc, toMs, load, save: store, shadowHost, setHTML } = window.__cor3;
+  const { esc, toMs, load, saveSoon, shadowHost, setHTML, check, shape } = window.__cor3;
 
   // ---------- times ----------
   // "2h 05m", "12m", "40s"; null when the time is unknown or past.
@@ -24,7 +24,9 @@
   // Raw copies of the last job lists, for checking in the console (window.__cor3JobTracker).
   const debug = { lastJobs: null, lastRecentJobs: null };
   window.__cor3JobTracker = { debug, state };
-  const save = () => store(STORE_KEY, state);
+  // Kept in localStorage, so the panel and the top bar show your jobs as soon
+  // as the game opens again; the game's next job list replaces them.
+  const save = () => saveSoon(STORE_KEY, state);
 
   const isJob = (o) => o && typeof o === "object" && ["TAKEN", "COMPLETED", "FAILED"].includes(o.status) &&
     ("conditions" in o || "relatedServers" in o) && o.id != null;
@@ -42,6 +44,7 @@
     // complete), or the job was completed and handed in.
     const action = node.event && typeof node.event.action === "string" ? node.event.action : null;
     const d = node.data && typeof node.data === "object" && !Array.isArray(node.data) ? node.data : null;
+    if (action && action.startsWith("job.") && d) check("jobs", "job updates", d.jobId != null, shape(d));
     if (action && d && d.jobId != null) {
       const id = String(d.jobId);
       const job = state.jobs[id];
@@ -76,6 +79,10 @@
     }
     // The network map's links between servers, for working out routes.
     if (Array.isArray(node.servers) && Array.isArray(node.connections)) {
+      check("jobs", "network map", !node.servers.length ||
+        (node.servers.some((s) => s && typeof s.serverIp === "string" && s.id != null) &&
+         (!node.connections.length || node.connections.some((c) => c && "serverA" in c && "serverB" in c))),
+        shape(node.servers[0]));
       const ip = {};
       let home = null;
       for (const s of node.servers) {
@@ -100,6 +107,8 @@
       // carries fewer fields than expected; drop ones that are no longer in it.
       debug.lastRecentJobs = node.recentJobs;
       const recent = node.recentJobs.filter((j) => j && typeof j === "object" && j.id != null);
+      check("jobs", "job list", !node.recentJobs.length ||
+        recent.some((j) => "endTime" in j && ("conditions" in j || "relatedServers" in j)), shape(node.recentJobs[0]));
       state.market = { ...(state.market || {}), taken: recent.length, at: Date.now() };
       const keep = new Set(recent.map((j) => String(j.id)));
       for (const id of Object.keys(state.jobs)) if (!keep.has(id)) delete state.jobs[id];
@@ -140,7 +149,7 @@
   // Every decoded websocket packet (shared/socket.js).
   window.__cor3.onPacket((data) => {
     try {
-      if (scan(data, 0)) { save(); render(); }
+      if (scan(data, 0)) { save(); render(); annotateJobCards(); window.__cor3.emit("jobs"); }
     } catch (e) { console.warn("[job tracker]", e); }
   });
 
@@ -605,11 +614,11 @@
     }
   }
 
-  // Refresh countdowns and card marks once a second.
-  setInterval(() => {
+  // Countdowns tick once a second; card marks follow the game's page.
+  window.__cor3.every(1000, () => {
     if (state.panel.open && !state.panel.min && Object.keys(state.jobs).length) render();
-    try { annotateJobCards(); } catch (e) { console.warn("[job tracker]", e); }
-  }, 1000);
+  }, "job tracker");
+  window.__cor3.onDom(annotateJobCards, 250);
   document.addEventListener("DOMContentLoaded", render);
   if (document.readyState !== "loading") render();
 })();

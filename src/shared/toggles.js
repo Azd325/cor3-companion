@@ -24,6 +24,8 @@
     if (m.type === "set" && reg[m.id]) {
       try { reg[m.id].set(!!m.on); } catch (err) { console.warn("[cor3 helper]", err); }
     }
-    window.postMessage({ cor3Helper: "states", nonce: m.nonce, states: states() }, "*");
+    let warnings = {};
+    try { warnings = window.__cor3.warnings(); } catch (_) {}
+    window.postMessage({ cor3Helper: "states", nonce: m.nonce, states: states(), warnings }, "*");
   });
 })();
