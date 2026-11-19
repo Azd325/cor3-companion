@@ -18,7 +18,7 @@ src/
     icewall/  protocol/  dailyops/  jobs/  loadout/  expeditions/  inventory/  lighter/  topbar/
   popup/                 toolbar menu (popup.html, popup.js, update-check.js)
   icons/                 toolbar icons, made from icon.svg
-scripts/                 build, bump, sign, make-icons (not shipped)
+scripts/                 build, bump, changelog, sign, make-icons (not shipped)
 ```
 
 Every content script runs in the page's JS world except `shared/bridge.js`. The `shared/` files load
@@ -57,11 +57,17 @@ This writes `dist/`:
 from the **Actions** tab (**Release** > **Run workflow**, where you can pick patch, minor or major). It:
 
 1. bumps `version` in `src/manifest.json` (`node scripts/bump.mjs`),
-2. builds both packages and signs the Firefox one with Mozilla (`node scripts/sign.mjs`),
-3. commits the new version, tags it `vX.Y.Z` and publishes a GitHub release with
+2. moves the **Unreleased** section of `CHANGELOG.md` under the new version and uses it as the release
+   notes (`node scripts/changelog.mjs`); if it's empty, the notes list the PRs merged since the last release,
+3. builds both packages and signs the Firefox one with Mozilla (`node scripts/sign.mjs`),
+4. commits the new version and changelog, tags it `vX.Y.Z` and publishes a GitHub release with
    `cor3-companion-firefox.xpi`, `cor3-companion-chrome.zip` and `updates.json`.
 
-Changes to only the README, `docs/` or the workflow don't start a release. A run takes 3–5 minutes,
+**Release notes:** every PR that changes what players see adds a line under **Unreleased** in
+`CHANGELOG.md`, under **New**, **Improved** or **Fixed**, written for players. That's what the release
+page shows for that version.
+
+Changes to only the README, `CHANGELOG.md`, `docs/` or the workflow don't start a release. A run takes 3–5 minutes,
 most of it "Waiting for approval..." while Mozilla signs; don't cancel it, a signed version can't be
 signed again. Pull after a release, since the workflow pushes the version commit to `main`.
 

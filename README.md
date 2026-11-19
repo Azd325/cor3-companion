@@ -39,6 +39,7 @@ The one thing it fills in is the Signal Decode code box, which you then confirm 
 ## Install
 
 Download the files from the [latest release](https://github.com/nvanderwaal/cor3-companion/releases/latest).
+What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
 
 ### Firefox
 
