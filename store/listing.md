@@ -61,7 +61,7 @@ Everything but the screenshots comes from the release workflow. Upload the scree
 |---|---|
 | 1-job-tracker.png | Job tracker: every taken job with its to-do list, server access and the route to each server |
 | 2-expeditions.png | Expeditions: clear risk and reward numbers on every decision |
-| 3-loadout.png | Loadout & market: whether a program fits your setup and what it would change |
+| 3-loadout.png | Loadout & market: how a part compares to yours, whether your setup still boots and what it does to your programs |
 | 4-ice-wall.png | ICE WALL Break: where the pattern can still fit |
 | 5-inventory.png | Inventory: sell prices, rarity borders and your stash value |
 
