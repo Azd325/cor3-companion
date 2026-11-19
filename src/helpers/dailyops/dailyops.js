@@ -211,7 +211,7 @@
           `border:1px solid ${color.CYAN}55;color:${color.TEXT};background:rgba(0,0,0,.35);pointer-events:none`;
         parent.insertBefore(el, n.where === "after" ? n.anchor.nextSibling : n.anchor);
       }
-      if (el.innerHTML !== n.html) el.innerHTML = n.html;
+      window.__cor3.setHTML(el, n.html);
       keep.add(el);
     }
     notes = [];

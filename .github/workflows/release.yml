@@ -2,8 +2,9 @@
 # one on addons.mozilla.org (listed), makes a GitHub release with both, and
 # submits the Chrome one to the Chrome Web Store.
 #
-# Runs on every push to main (patch bump) or by hand from the Actions tab,
-# where you can pick patch/minor/major.
+# Runs only by hand: Actions > Release > Run workflow, where you pick
+# patch/minor/major. Merging to main never releases, so several PRs can go out
+# together as one version.
 #
 # Repository secrets (Settings > Secrets and variables > Actions):
 #   WEB_EXT_API_KEY, WEB_EXT_API_SECRET   AMO JWT issuer and secret
@@ -14,18 +15,6 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - "README.md"
-      - "CHANGELOG.md"
-      - ".gitignore"
-      - ".env.example"
-      - ".gitattributes"
-      - ".github/**"
-      - "docs/**"
-      - "store/**"
-      - "PRIVACY.md"
   workflow_dispatch:
     inputs:
       bump:
@@ -114,8 +103,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/manifest.json CHANGELOG.md
           git commit -m "Release v$VERSION"
+          # Something may have been merged while Mozilla was signing: put the
+          # version commit on top of it rather than failing the push.
+          git pull --rebase origin main
           git tag "v$VERSION"
-          # Pushes made with GITHUB_TOKEN don't start this workflow again.
           git push origin HEAD:main "v$VERSION"
 
       - name: Create GitHub release

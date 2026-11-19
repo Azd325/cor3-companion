@@ -6,7 +6,7 @@
 (() => {
   "use strict";
 
-  const { esc, toMs, load, save: store, shadowHost } = window.__cor3;
+  const { esc, toMs, load, save: store, shadowHost, setHTML } = window.__cor3;
   const STORE_KEY = "cor3-topbar";
   const state = load(STORE_KEY, { open: true, min: false });
   const save = () => store(STORE_KEY, state);
@@ -217,13 +217,13 @@
     if (!ensure()) return;
     host.style.display = "";
     const html = barHtml();
-    if (html !== lastHtml) { bar.innerHTML = html; lastHtml = html; }
+    if (html !== lastHtml) { setHTML(bar, html); lastHtml = html; }
     if (state.min) openMenu = null;
     if (openMenu) placeMenu();
     menu.hidden = !openMenu;
     if (openMenu) {
       const html = menuHtml();
-      if (menu.innerHTML !== html) menu.innerHTML = html;
+      setHTML(menu, html);
     }
   }
 

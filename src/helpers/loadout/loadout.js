@@ -285,7 +285,7 @@
       if (where === "before") anchor.parentNode.insertBefore(el, anchor);
       else anchor.appendChild(el);
     }
-    if (el.innerHTML !== html) el.innerHTML = html;
+    window.__cor3.setHTML(el, html);
   }
 
   // Marks the best entry per group with a star (gain > 0 only).

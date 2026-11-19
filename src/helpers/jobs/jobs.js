@@ -5,7 +5,7 @@
 (() => {
   "use strict";
 
-  const { esc, toMs, load, save: store, shadowHost } = window.__cor3;
+  const { esc, toMs, load, save: store, shadowHost, setHTML } = window.__cor3;
 
   // ---------- times ----------
   // "2h 05m", "12m", "40s"; null when the time is unknown or past.
@@ -496,7 +496,7 @@
     if (html === lastHtml) return tickTimes();
     const body = panel.querySelector(".b");
     const scroll = body ? body.scrollTop : 0;
-    panel.innerHTML = html;
+    setHTML(panel, html);
     lastHtml = html;
     tickTimes();
     const nb = panel.querySelector(".b");

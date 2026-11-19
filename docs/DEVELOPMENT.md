@@ -53,8 +53,9 @@ This writes `dist/`:
 
 ## Releases (GitHub Actions)
 
-`.github/workflows/release.yml` runs on every push to `main` that changes the extension, or by hand
-from the **Actions** tab (**Release** > **Run workflow**, where you can pick patch, minor or major). It:
+Releases are started by hand: **Actions** > **Release** > **Run workflow**, where you pick patch, minor or
+major. Merging a PR to `main` never releases, so merge as many PRs as you like and ship them together as one
+version. `.github/workflows/release.yml` then:
 
 1. bumps `version` in `src/manifest.json` (`node scripts/bump.mjs`),
 2. moves the **Unreleased** section of `CHANGELOG.md` under the new version and uses it as the release
@@ -78,7 +79,7 @@ The privacy policy is [`PRIVACY.md`](../PRIVACY.md).
 `CHANGELOG.md`, under **New**, **Improved** or **Fixed**, written for players. That's what the release
 page shows for that version.
 
-Changes to only the README, `CHANGELOG.md`, `PRIVACY.md`, `docs/`, `store/` or the workflow don't start a release. A run takes 3–5 minutes,
+A run takes 3–5 minutes,
 most of it "Waiting for approval..." while Mozilla signs; don't cancel it, a signed version can't be
 signed again. Pull after a release, since the workflow pushes the version commit to `main`.
 

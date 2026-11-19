@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "COR3 Companion",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "description": "Unofficial helpers for cor3.gg: puzzle solvers, a job tracker with routes, upgrade checks, expedition odds and item prices.",
   "icons": {
     "16": "icons/icon-16.png",
@@ -70,12 +70,15 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "icewall-helper@local",
-      "strict_min_version": "128.0",
+      "strict_min_version": "140.0",
       "data_collection_permissions": {
         "required": [
           "none"
         ]
       }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
     }
   }
 }
