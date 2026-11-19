@@ -15,7 +15,7 @@ src/
     msgpack.js           decoder for the game's websocket frames
     socket.js            read-only websocket hook; hands packets to window.__cor3.onPacket
   helpers/
-    icewall/  jobs/  loadout/  expeditions/  inventory/  lighter/  topbar/
+    icewall/  protocol/  dailyops/  jobs/  loadout/  expeditions/  inventory/  lighter/  topbar/
   popup/                 toolbar menu (popup.html, popup.js, update-check.js)
   icons/                 toolbar icons, made from icon.svg
 scripts/                 build, bump, sign, make-icons (not shipped)
