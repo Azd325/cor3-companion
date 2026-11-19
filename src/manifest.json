@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "COR3 Companion",
   "version": "1.2.8",
-  "description": "ICE WALL pattern highlighter, protocol minigame solver, daily ops puzzle helper, job tracker with routes and doable jobs, loadout and market upgrade helper, exact expedition risk/rewards and mercenary odds, and inventory prices for cor3.gg.",
+  "description": "Unofficial helpers for cor3.gg: puzzle solvers, a job tracker with routes, upgrade checks, expedition odds and item prices.",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",

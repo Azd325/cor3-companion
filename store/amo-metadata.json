@@ -1,0 +1,19 @@
+{
+  "name": {
+    "en-US": "COR3 Companion"
+  },
+  "summary": {
+    "en-US": "Unofficial helpers for the cor3.gg game: ICE WALL and protocol solvers, daily ops puzzles, a job tracker with routes, loadout and market upgrade checks, expedition odds and inventory prices. Not affiliated with cor3.gg."
+  },
+  "categories": {
+    "firefox": [
+      "games-entertainment"
+    ]
+  },
+  "homepage": {
+    "en-US": "https://github.com/nvanderwaal/cor3-companion"
+  },
+  "version": {
+    "license": "all-rights-reserved"
+  }
+}

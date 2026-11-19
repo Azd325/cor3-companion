@@ -1,18 +1,23 @@
 // Quiet update check for the toolbar menu.
 //
-// When the menu opens, asks GitHub (at most every 6 hours) for the latest
-// release and, only if it is newer than this copy, shows one small line under
-// the header with a link to it. No permissions, no background work, no badge.
+// Copies from the Chrome Web Store update themselves, so they never check.
+// Everyone else, when the menu opens, asks GitHub (at most every 6 hours) for
+// the latest release and, only if it is newer than this copy, gets one small
+// line under the header. No permissions, no background work, no badge.
 //
-// Chrome can't update unpacked extensions, so Chrome always gets the note.
-// Firefox updates itself from the release's updates.json within about a day,
-// so it only gets the note if a release is still not installed 2 days later.
+// Unpacked Chrome copies can't update, so they get the note right away. Firefox updates itself (from
+// addons.mozilla.org, or older GitHub installs from the release's updates.json),
+// so it only gets the note if a release is still not installed 3 days later,
+// which leaves time for Mozilla's review.
 (() => {
   const api = globalThis.browser ?? globalThis.chrome;
+  // Chrome adds update_url to the manifest of every copy installed from its store.
+  if (api.runtime.getManifest().update_url) return;
+
   const LATEST = "https://api.github.com/repos/nvanderwaal/cor3-companion/releases/latest";
   const KEY = "cor3UpdateCheck";
   const EVERY = 6 * 60 * 60 * 1000;
-  const FIREFOX_GRACE = 2 * 24 * 60 * 60 * 1000;
+  const FIREFOX_GRACE = 3 * 24 * 60 * 60 * 1000;
 
   const isFirefox = api.runtime.getURL("").startsWith("moz-extension:");
   const current = api.runtime.getManifest().version;

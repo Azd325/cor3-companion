@@ -10,6 +10,12 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+### New
+
+- **On its way to the Chrome Web Store and Firefox Add-ons.** Firefox copies move to the store version by
+  themselves. On Chrome, once the store version is out, add it from there and remove the old copy; your
+  settings stay.
+
 ## 1.2.8 (2026-11-19)
 
 ### New

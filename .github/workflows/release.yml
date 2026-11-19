@@ -1,12 +1,16 @@
-# Bumps the version, builds Chrome + Firefox packages, signs the Firefox one
-# with Mozilla (unlisted) and publishes both as a GitHub release.
+# Bumps the version, builds Chrome + Firefox packages, publishes the Firefox
+# one on addons.mozilla.org (listed), makes a GitHub release with both, and
+# submits the Chrome one to the Chrome Web Store.
 #
 # Runs on every push to main (patch bump) or by hand from the Actions tab,
 # where you can pick patch/minor/major.
 #
-# Needs two repository secrets (Settings > Secrets and variables > Actions):
-#   WEB_EXT_API_KEY     your AMO JWT issuer
-#   WEB_EXT_API_SECRET  your AMO JWT secret
+# Repository secrets (Settings > Secrets and variables > Actions):
+#   WEB_EXT_API_KEY, WEB_EXT_API_SECRET   AMO JWT issuer and secret
+#   CHROME_CLIENT_ID, CHROME_CLIENT_SECRET, CHROME_REFRESH_TOKEN,
+#   CHROME_PUBLISHER_ID, CHROME_EXTENSION_ID
+#                                         Chrome Web Store API (the Chrome
+#                                         step is skipped until these are set)
 name: Release
 
 on:
@@ -20,6 +24,8 @@ on:
       - ".gitattributes"
       - ".github/**"
       - "docs/**"
+      - "store/**"
+      - "PRIVACY.md"
   workflow_dispatch:
     inputs:
       bump:
@@ -39,9 +45,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
     # A normal run takes 3-5 minutes (most of it is Mozilla approving the
-    # signature, "Waiting for approval..."); stop a stuck signing step instead of
-    # letting it run for GitHub's default 6 hours.
-    timeout-minutes: 15
+    # version, "Waiting for approval..."); stop a stuck run instead of letting
+    # it run for GitHub's default 6 hours. sign.mjs gives up waiting after 12.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
 
@@ -63,23 +69,34 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: node scripts/changelog.mjs "$VERSION" notes.md
 
+      # Submits the version to AMO's listed channel. Exit code 3 means Mozilla
+      # has it but wants a human review first: AMO publishes it once approved,
+      # and this release goes out without the .xpi.
       - name: Build and sign
         env:
           WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
           WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
-          # Installed Firefox copies check this file for updates.
-          FIREFOX_UPDATE_URL: https://github.com/${{ github.repository }}/releases/latest/download/updates.json
+          AMO_CHANNEL: listed
         run: |
           rm -rf web-ext-artifacts
-          node scripts/sign.mjs
+          node scripts/sign.mjs || [ $? -eq 3 ]
 
       - name: Collect release files
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir release
-          cp web-ext-artifacts/*.xpi release/cor3-companion-firefox.xpi
           cp dist/cor3-companion-chrome.zip release/cor3-companion-chrome.zip
+          XPI=$(ls web-ext-artifacts/*.xpi 2>/dev/null | head -n1 || true)
+          if [ -z "$XPI" ]; then
+            echo "No signed .xpi yet (Mozilla is reviewing $VERSION); releasing without it."
+            ls -la release
+            exit 0
+          fi
+          cp "$XPI" release/cor3-companion-firefox.xpi
+          # Copies installed from a GitHub .xpi before the AMO listing check this
+          # file. The .xpi it points to has no update_url, so once they install it
+          # they update from addons.mozilla.org like everyone else.
           ID=$(node -p "require('./src/manifest.json').browser_specific_settings.gecko.id")
           LINK="https://github.com/${{ github.repository }}/releases/download/v$VERSION/cor3-companion-firefox.xpi"
           node -e '
@@ -114,9 +131,20 @@ jobs:
 
           **Firefox:** click `cor3-companion-firefox.xpi` to install (it updates itself after that).
           **Chrome:** unzip `cor3-companion-chrome.zip` over your extension folder and click reload in `chrome://extensions`.
+          Copies from the Chrome Web Store or Firefox Add-ons update by themselves, once the store has reviewed the version.
 
           Every version's changes: [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
 
           Find it useful? [Buy me a coffee ☕](https://buymeacoffee.com/nvanderwaal)
           EOF
           gh release create "v$VERSION" release/* --title "v$VERSION" --notes-file notes.md
+
+      # Last, so a Chrome problem never holds back the release itself.
+      - name: Submit to the Chrome Web Store
+        env:
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+        run: node scripts/chrome-upload.mjs

@@ -1,238 +1,162 @@
 # <img src="src/icons/icon-128.png" alt="" width="40" align="center"> COR3 Companion
 
+**Play cor3.gg with a sharper edge.** COR3 Companion solves the puzzles with you, keeps track of your jobs and
+the route to every server, tells you which upgrade is worth buying, and shows the real odds on expeditions.
+All of it right inside the game.
+
+[![Install for Firefox](https://img.shields.io/badge/Firefox-Install-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](#firefox)
+[![Install for Chrome](https://img.shields.io/badge/Chrome%2C%20Edge%2C%20Brave-Install-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](#chrome-edge-brave)
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/nvanderwaal)
 
-Browser extension for cor3.gg:
+Free, no account, no tracking. Works in Firefox, Chrome, Edge and Brave.
 
-- **[ICE WALL Break](#ice-wall-break)**: highlights where the target pattern fits on the board (Alt+H toggles).
-- **[Protocol solver](#protocol-solver)**: the best next move in the cleaner-bot protocol minigame, with the fields
-  to change outlined (Alt+P toggles).
-- **[Daily ops](#daily-ops)**: outlines the bad lines in System Log Integrity with the reason on each, and decodes
-  Signal Decode and types the code in for you (Alt+D toggles).
-- **[Job tracker](#job-tracker)**: a panel with your taken jobs, their to-do items, server access and the route to
-  each server, maintenance times and defence against your HACK power (Alt+J toggles), plus a ✓ or ✗ on the
-  market's job cards that says whether you can do the job now.
-- **[Expeditions](#expeditions)**: makes the risk/rewards popup on decision options clear (higher/lower, more/less
-  with the exact numbers, the mission risk after the choice and the time left to decide), and shows the exact risk
-  score of a mission and the death chance of each mercenary (Alt+E toggles).
-- **[Loadout & market](#loadout--market)**: shows what a program or hardware part would do to your setup, on the
-  loadout page and on the market's cards, and stars the best upgrade (Alt+L toggles).
-- **[Inventory](#inventory)**: the sell price on every item in your inventory and a border in its
-  rarity colour (Alt+I toggles).
-- **[Lighter screen](#lighter-screen)**: hides the moving backgrounds and the network map fog (off by default,
-  Alt+V toggles).
-- **[Top bar](#top-bar)**: a thin strip at the top of the game with what needs you now and a menu to switch the
-  helpers (Alt+B toggles).
+<img src="store/screenshots/1-job-tracker.png" alt="Job tracker: every taken job with its to-do list, server access and the route to each server" width="800">
 
-Click the extension's icon in the toolbar for a list of the helpers with a switch for each, which turns the
-helper on or off in your open cor3.gg tabs, the same as its shortcut.
+## What you get
 
-<img src="docs/menu.png" alt="Toolbar menu with a switch and shortcut for each of the helpers" width="300">
+| Helper | What it does for you | Key |
+|---|---|---|
+| [Job tracker](#job-tracker) | Your jobs, what's left to do, and the route to every server | Alt+J |
+| [Expeditions](#expeditions) | Clear risk and reward numbers on every decision, and real death odds | Alt+E |
+| [Loadout & market](#loadout--market) | Whether a part or program is an upgrade before you buy it | Alt+L |
+| [ICE WALL Break](#ice-wall-break) | Where the pattern can still fit, until only the answer is left | Alt+H |
+| [Inventory](#inventory) | Sell prices, rarity colours and your stash's total value | Alt+I |
+| [Protocol solver](#protocol-solver) | The best next move in the cleaner-bot protocol minigame | Alt+P |
+| [Daily ops](#daily-ops) | Spots the bad log lines and decodes the signal for you | Alt+D |
+| [Top bar](#top-bar) | What needs you now, at a glance | Alt+B |
+| [Lighter screen](#lighter-screen) | Hides moving backgrounds and map fog (off until you want it) | Alt+V |
 
-When a newer release is out, the menu shows one small line under its header with a link to it (Chrome right away,
-Firefox only if it hasn't updated itself within 2 days). It checks GitHub at most every 6 hours, only while the
-menu is open.
-
-In the game it only reads what the game already sends to your browser, and it never sends anything to the game.
-The one thing it fills in is the Signal Decode code box, which you then confirm yourself.
+Every helper can be switched on or off with its key, from the extension's icon in the toolbar, or from the
+**Helpers** menu in the top bar. It remembers your choices.
 
 ## Install
 
-Download the files from the [latest release](https://github.com/nvanderwaal/cor3-companion/releases/latest).
-What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
+COR3 Companion is on its way to the Chrome Web Store and Firefox Add-ons. Until it's there, install it from
+the [latest release](https://github.com/nvanderwaal/cor3-companion/releases/latest) in a minute:
 
 ### Firefox
 
-1. Click `cor3-companion-firefox.xpi` in the latest release.
-2. Firefox asks to install the add-on; click **Continue to Installation**, then **Add**.
+1. Click [`cor3-companion-firefox.xpi`](https://github.com/nvanderwaal/cor3-companion/releases/latest/download/cor3-companion-firefox.xpi).
+2. Firefox asks to install the add-on: click **Continue to Installation**, then **Add**.
 
-The add-on is signed by Mozilla, so it works in normal Firefox and stays installed.
-It **updates itself** when a new release comes out (Firefox checks about once a day;
-`about:addons` > gear icon > **Check for Updates** checks right away).
+It's signed by Mozilla and **updates itself**, also to the Firefox Add-ons version once that's out.
 
-If nothing shows up on cor3.gg, click the puzzle-piece icon in the toolbar and allow the add-on on cor3.gg.
+### Chrome, Edge, Brave
 
-### Chrome (or Edge, Brave)
+The Chrome Web Store version is in review. Until it's out:
 
-1. Download `cor3-companion-chrome.zip` and unzip it into a folder you keep, e.g. `Documents\cor3-companion`.
-   Chrome loads the extension from that folder, so don't delete it.
+1. Download [`cor3-companion-chrome.zip`](https://github.com/nvanderwaal/cor3-companion/releases/latest/download/cor3-companion-chrome.zip) and unzip it into a folder
+   you keep, e.g. `Documents\cor3-companion`. Chrome loads the extension from there, so don't delete it.
 2. Open `chrome://extensions` (Edge: `edge://extensions`) and turn on **Developer mode** (top right).
 3. Click **Load unpacked** and pick that folder.
 
-Chrome can't update extensions from outside the Chrome Web Store. For a new version, unzip the new
-release's zip over the same folder and click the reload icon on the extension's card.
-Chrome may show a "developer mode extensions" notice at startup; that's normal for unpacked extensions.
+This copy can't update itself: for a new version, unzip the new zip over the same folder and click the reload icon
+on the extension's card. The toolbar menu tells you when there is one. Once the store version is out, switch to it
+and you'll get updates automatically.
 
-## ICE WALL Break
+Then open or reload [cor3.gg](https://cor3.gg). Nothing showing up? Click the puzzle-piece icon in your browser's
+toolbar and allow COR3 Companion on cor3.gg.
 
-<img src="docs/ice-wall.png" alt="ICE WALL Break board with candidate placements outlined in yellow" width="460">
-
-The helper tries every spot where the target pattern could fit and drops the ones that clash with a
-revealed glyph or that you already guessed wrong.
-
-- **Yellow outlines**: spots that are still possible (up to 6, the ones with the most matching
-  revealed glyphs first). The text on top says how many are left, e.g. "10 possible · best 1/5 known".
-- **Green outline + MATCH**: only one spot is left; that's the answer.
-
-As more glyphs are revealed the yellow options shrink until one turns green.
-
-## Protocol solver
-
-In the cleaner-bot protocol minigame the game hides one combination of Version, Method, Channel and Cipher and,
-after each attempt, says how many fields are wrong. The helper reads those results from the minigame's log and
-shows one line above the fields:
-
-- **NEXT v1.0 · PUT · Fiber · RSA**: the move to play now. The fields you still have to change are outlined.
-- **32 possible**: how many combinations still fit the results so far.
-- **wins 18 of 32**: only when a win is no longer certain, how many of those the best play still wins in
-  the attempts left. With 4 attempts the best play wins 55 of the 81 rounds; with 6 it always wins, in 5
-  attempts at most.
-- **ANSWER** in green: only one combination is left.
-
-You set the fields and send them yourself; the helper never presses a key. It writes what it read to the
-browser console (`[COR3 protocol]`), handy if the game changes its log.
-
-## Daily ops
-
-Helps with both daily ops puzzles. It only reads what the puzzle shows on screen.
-
-**System Log Integrity.** A good log line looks like `[HH:MM:SS] TYPE /sector=1-256 /status=OK|WARN|ERROR`,
-where TYPE is AUTH, TEMP-SYNC, SCAN, ROUTE-CHECK, RADIO-TEST, PING or SYNC.
-
-- Every line that breaks the format gets a red outline and the reason after it, e.g. `time: minute 61` or
-  `no /status`. A line above the list says how many there are.
-- In the fix step, the error buttons that fit each line are outlined.
-
-You tick the lines and press the buttons yourself.
-
-**Signal Decode.** The helper reads the short and long pulses and shows the code under them, e.g.
-**CODE 4821 · Binary**. Morse uses 5 pulses per digit, binary 4 (short = 0, long = 1).
-
-- In the encoding step, the right encoding is outlined.
-- In the code step, it types the code into the box. You press Confirm yourself. It doesn't touch the box once
-  you've typed something else into it.
-- A 20-pulse signal can sometimes be read both ways. Then it shows both codes, types nothing, and you listen to
-  the signal to tell.
+See what's new in [CHANGELOG.md](CHANGELOG.md).
 
 ## Job tracker
 
-<img src="docs/job-tracker.png" alt="Job tracker panel with two taken jobs, their to-do items, server access and the route to a server behind a hack" width="394">
+A small panel you can drag anywhere, minimise or hide. For every job you've taken:
 
-A panel you can drag around, minimise or hide with Alt+J. For every job you've taken it shows:
+- **Time left**, and a green **READY** once you can hand it in.
+- A **to-do list** with the IPs, files and logs to handle, with checkboxes and a **copy** button on every IP.
+- **Your access** to each server: admin, access, no access, via 1 hack, no route or maintenance.
+- **The route from Home** you can walk right now, e.g. Home → RM7-S4L2 → 10.0.0.7, with the servers you still
+  have to hack in orange. It skips servers in maintenance and servers your HACK power can't beat.
+- **Maintenance** times, and each server's defence against your HACK power (**DEF 50 · HACK 42 ✗**).
 
-- the time left, and **READY** (green border) once the game says the job can be completed,
-- a **to-do** list with the IPs, files and logs to handle, each with a checkbox you tick yourself, and a
-  **copy** button next to every IP that puts it on your clipboard,
-- the job's servers with your access: **admin**, **access**, **no access**, **via 1 hack**, **no route** or
-  **maintenance**, or **? unknown** until you've opened the network map,
-- for a server you can't get into directly, the route from Home that you can walk now, e.g.
-  Home → RM7-S4L2 → 10.0.0.7, with the servers you still have to hack in orange. The route skips servers in
-  maintenance and servers your HACK power can't beat, and uses as few hacks as it can. With no route at all,
-  hovering **no route** says which server blocks it,
-- for a server in maintenance, how long it has left (**maintenance, 12m left**), and **maint. in 25m**
-  when maintenance starts within 2 hours,
-- for a server you don't have access to yet, its defence against your best HACK power, e.g.
-  **DEF 50 · HACK 42 ✗** (red when your HACK power is lower). Open your Loadout once so it knows your HACK power.
+On the market, every job card gets a green ✓ when you can do the job now or a red ✗ with the reason.
 
-The bottom line shows when the market was last read, when the jobs reset and how many servers are known.
-The panel only updates job status while the market's Job tab has been opened, because the game only
-sends those updates there.
-
-On the market's job cards, the servers line gets one mark for the whole job: green ✓ when you can do the job
-now (every server is yours, or within reach through servers your HACK power beats), red ✗ when you can't.
-Hovering the ✗ lists what blocks it, e.g. a server in maintenance with its time left, a defence above your
-HACK power, no route from Home, or a server that isn't on your network map yet. Open the network map and
-your Loadout once so the tracker knows the routes and your HACK power.
+*Tip:* open the network map and your Loadout once, so the tracker knows the routes and your HACK power.
 
 ## Expeditions
 
-When a drone event asks for a decision, hovering an option shows the game's popup with **Risk** and
-**Rewards** chevrons, which are small and coloured the wrong way round ("risk up" is green). The helper
-makes that popup clear:
+<img src="store/screenshots/2-expeditions.png" alt="Expedition decision popup with exact risk and reward numbers" width="640">
 
-<img src="docs/expeditions.png" alt="Events panel with an option's popup showing Trade-off: +30 loot for +10 risk, Mission risk 16 → 26 and the time left to decide" width="620">
+The game's risk/rewards popup is tiny and colours "risk up" green. The helper makes it clear:
 
-- After each word it writes what changes and by how much, in the right colour: Risk **HIGHER +8** (red),
-  **LOWER −20** (green) or **SAME**; Rewards **MORE +3** (green), **LESS −2** (red) or **SAME**.
-- A line under it sums the option up: **★ No downside**, **Trade-off: +3 loot for +8 risk**,
-  **Trade-off: −20 risk for −2 loot**, **✕ More danger, nothing gained**, and so on.
-- Under that, the mission's risk after the choice (**Mission risk 52 → 60**, with the new level when it
-  changes) and the time left to decide.
+- **Risk HIGHER +8** in red or **LOWER −20** in green, **Rewards MORE +3** or **LESS −2**, with the exact numbers.
+- A one-line verdict: **★ No downside**, **Trade-off: +3 loot for +8 risk**, **✕ More danger, nothing gained**.
+- The mission's risk after your choice (**Mission risk 52 → 60**) and the time left to decide.
 
-The numbers come from the expedition data the game sends when you open Expeditions. Without it the popup
-still shows the words, just without numbers. Alt+E turns the helper off and on.
-
-The mission's risk level also shows the exact score, e.g. **MODERATE (52)**
-(the game rounds 0–33 to LOW, 34–66 to MODERATE, 67–100 to HIGH).
-
-When you set up an expedition, each mercenary the game has priced gets a line with its odds, e.g.
-**Death 4% · Fail, survives 12%** (red from 10% death).
-The odds appear once you've picked that mercenary in the setup, because that's when the game sends them; the
-mission risk then also shows the death chance, e.g. **MODERATE (52) · death 4%**.
+You also see a mission's exact risk score, e.g. **MODERATE (52)**, and each mercenary's odds, e.g.
+**Death 4% · Fail, survives 12%**.
 
 ## Loadout & market
 
-The helper reads your loadout when you open the Loadout page, so open it once before you shop.
-It adds a short block to these cards:
+<img src="store/screenshots/3-loadout.png" alt="Market GPU card showing the comparison with the current GPU, boot check and program power change" width="640">
 
-- **Programs you haven't installed**: whether the program fits next to the installed ones. If it
-  doesn't, whether it fits in place of an installed program with the same ability (HACK, DECRYPT, ...).
-  It also shows your best power per ability before and after, and what the program would take from the
-  programs that are already running. If it fits nowhere, it lists the resources you're short, e.g.
-  `CPU Freq 16.2/12.7 GHz`.
-- **Installed programs**: what each resource needs to reach max power, with the one holding it back
-  most (the game's yellow bar) first.
-- **Hardware "Change" list**: whether your setup still boots (PSU draw against PSU power) and
-  how each installed program's power changes.
-- **Market hardware**: the same, plus how the specs compare to the part you have now.
-- **Market software**: the same as programs you haven't installed, plus a note if you already own it.
+Know whether something is worth it before you spend your credits:
 
-<img src="docs/loadout.png" alt="Loadout page with the helper's fit check and power change on each program card" width="880">
+- **Hardware:** how it compares to the part you have, whether your setup still boots, and what it does to each
+  program's power.
+- **Programs:** whether it fits next to your installed programs or in place of one, what it does to your best
+  power per ability, and what you're short of if it doesn't fit.
+- **★** marks the best upgrade among the cards on screen.
 
-**★** marks the best upgrade among the cards on screen: per hardware category, and per ability for
-software. Only parts that boot and programs that fit can get it.
+*Tip:* open your Loadout once before you shop. Power for a setup you don't have yet is an estimate (marked ≈).
 
-<img src="docs/market.png" alt="Market hardware cards with the helper's spec comparison, boot check and program power change" width="620">
+## ICE WALL Break
 
-The game works out program power on its server, so power for a setup you don't have yet is an
-estimate (marked ≈). For programs that are installed, the helper starts from the game's real number
-and only estimates the change.
+<img src="store/screenshots/4-ice-wall.png" alt="ICE WALL Break board with possible spots outlined" width="640">
 
-## Top bar
-
-<img src="docs/topbar.png" alt="Top bar with jobs, an open decision, an expedition that is back and the helper switches" width="640">
-
-A small strip at the top centre of the game. It only shows what needs you now, and leaves a part out when there's
-nothing to say:
-
-- **Jobs 2 · 1 READY · next 42m**: your taken jobs, how many you can hand in, and the time left on the next job that
-  still needs work (red under 15 minutes). Click it to open the job tracker. With no jobs taken it shows when the
-  market's jobs reset.
-- **Decision 2m 10s ▾**: an expedition is waiting for your choice, with the time left (red under a minute).
-  Click it to bring up the game's expedition window.
-- **Expedition back**: an expedition has come back and its loot is waiting (or **Expedition back in 4m 30s** in its
-  last 10 minutes). Click it to bring up the game's expedition window.
-- **Helpers ▾**: the same switches as the toolbar menu, so you don't have to leave the game.
-
-Click **◆ COR3** to shrink the bar to a single diamond, or press Alt+B to hide it. It remembers your choice.
+Yellow outlines show where the target pattern can still fit, with the most likely spots first. As glyphs get
+revealed the options shrink, until one turns green with **MATCH**: that's the answer.
 
 ## Inventory
 
-<img src="docs/inventory.png" alt="Inventory with the stash value line, each item's sell price in its corner and rarity borders" width="336">
+<img src="store/screenshots/5-inventory.png" alt="Inventory with sell prices, rarity borders and the stash value" width="640">
 
-When you open your inventory, every item you can sell gets its sell price in its corner, e.g. **12k cr**.
-Items also get a border in their rarity colour, using the rarity the game gives each item: blue for rare,
-purple for epic, orange for legendary and green for quest items. Common items keep the game's own look.
-The price takes the same colour. A line above the items shows the total value of your
-stash and the slots used, e.g. **Stash value 48,200 cr · 34/40 slots**. Hovering a price on a stack shows
-the value of the whole stack. Alt+I turns it off and on.
+Every item gets its sell price in the corner (**12k cr**) and a border in its rarity colour. A line on top shows
+your stash's total value and the slots used. Hover a stack's price to see the whole stack's value.
+
+## Protocol solver
+
+In the cleaner-bot protocol minigame, one line above the fields tells you the best move to play next
+(**NEXT v1.0 · PUT · Fiber · RSA**), with the fields you still have to change outlined, how many combinations are
+still possible, and the **ANSWER** in green once only one is left. With 6 attempts it always wins.
+
+## Daily ops
+
+- **System Log Integrity:** every bad log line gets a red outline with the reason, e.g. `time: minute 61`, and in
+  the fix step the right error buttons are outlined. You tick and press them yourself.
+- **Signal Decode:** it reads the pulses, shows the code (**CODE 4821 · Binary**), outlines the right encoding and
+  types the code in. You press Confirm yourself.
+
+## Top bar
+
+A thin strip at the top of the game that only shows what needs you: **Jobs 2 · 1 READY · next 42m**, a
+**Decision 2m 10s** waiting on an expedition, or **Expedition back** with loot waiting. Click a part to jump
+there. **Helpers ▾** has all the switches. Click **◆ COR3** to shrink it to a single diamond.
 
 ## Lighter screen
 
-Hides the game's moving background videos and the fog on the network map, and pauses them so they stop
-using your computer. It is off until you switch it on with Alt+V or in the menus, and it only changes what
-you see.
+Hides the game's moving background videos and the fog on the network map, so the game uses less of your computer.
+Off until you switch it on.
 
-## Development
+## Fair play and privacy
 
-Building, releases and signing are described in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+- It only reads what the game already sends to your browser, and it **never sends anything to the game**.
+- It never clicks or plays for you. The one thing it fills in is the Signal Decode code box, which you confirm.
+- No account, no tracking, no data collection. It only runs on cor3.gg. See the [privacy policy](PRIVACY.md).
+
+## Questions
+
+**Switching to the store version later?**
+On Chrome, add it from the Chrome Web Store, then remove the old copy in `chrome://extensions` and delete its
+folder. Your settings stay. On Firefox there's nothing to do: it moves to the store version by itself.
+
+**Found a bug or have an idea?** [Open an issue](https://github.com/nvanderwaal/cor3-companion/issues).
+
+**Like it?** [Buy me a coffee ☕](https://buymeacoffee.com/nvanderwaal)
+
+---
+
+COR3 Companion is a fan-made tool. It is not affiliated with, endorsed by or connected to cor3.gg or its
+developers. Every release's files are on the [releases page](https://github.com/nvanderwaal/cor3-companion/releases).
+Building and releasing: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
