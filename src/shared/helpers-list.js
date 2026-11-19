@@ -7,6 +7,8 @@ globalThis.__cor3Helpers = [
     desc: "Outlines where the target pattern can still fit." },
   { id: "protocol", name: "Protocol solver", key: "P",
     desc: "Best next move in the cleaner-bot protocol minigame." },
+  { id: "dailyops", name: "Daily ops", key: "D",
+    desc: "Marks the bad log lines and decodes the signal, typing in the code." },
   { id: "jobs", name: "Job tracker", key: "J",
     desc: "Panel with your taken jobs, to-dos, server access and routes; ✓ or ✗ on market jobs." },
   { id: "loadout", name: "Loadout & market", key: "L",

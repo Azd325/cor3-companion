@@ -7,6 +7,8 @@ Browser extension for cor3.gg:
 - **[ICE WALL Break](#ice-wall-break)**: highlights where the target pattern fits on the board (Alt+H toggles).
 - **[Protocol solver](#protocol-solver)**: the best next move in the cleaner-bot protocol minigame, with the fields
   to change outlined (Alt+P toggles).
+- **[Daily ops](#daily-ops)**: outlines the bad lines in System Log Integrity with the reason on each, and decodes
+  Signal Decode and types the code in for you (Alt+D toggles).
 - **[Job tracker](#job-tracker)**: a panel with your taken jobs, their to-do items, server access and the route to
   each server, maintenance times and defence against your HACK power (Alt+J toggles), plus a ✓ or ✗ on the
   market's job cards that says whether you can do the job now.
@@ -32,6 +34,7 @@ Firefox only if it hasn't updated itself within 2 days). It checks GitHub at mos
 menu is open.
 
 In the game it only reads what the game already sends to your browser, and it never sends anything to the game.
+The one thing it fills in is the Signal Decode code box, which you then confirm yourself.
 
 ## Install
 
@@ -87,6 +90,28 @@ shows one line above the fields:
 
 You set the fields and send them yourself; the helper never presses a key. It writes what it read to the
 browser console (`[COR3 protocol]`), handy if the game changes its log.
+
+## Daily ops
+
+Helps with both daily ops puzzles. It only reads what the puzzle shows on screen.
+
+**System Log Integrity.** A good log line looks like `[HH:MM:SS] TYPE /sector=1-256 /status=OK|WARN|ERROR`,
+where TYPE is AUTH, TEMP-SYNC, SCAN, ROUTE-CHECK, RADIO-TEST, PING or SYNC.
+
+- Every line that breaks the format gets a red outline and the reason after it, e.g. `time: minute 61` or
+  `no /status`. A line above the list says how many there are.
+- In the fix step, the error buttons that fit each line are outlined.
+
+You tick the lines and press the buttons yourself.
+
+**Signal Decode.** The helper reads the short and long pulses and shows the code under them, e.g.
+**CODE 4821 · Binary**. Morse uses 5 pulses per digit, binary 4 (short = 0, long = 1).
+
+- In the encoding step, the right encoding is outlined.
+- In the code step, it types the code into the box. You press Confirm yourself. It doesn't touch the box once
+  you've typed something else into it.
+- A 20-pulse signal can sometimes be read both ways. Then it shows both codes, types nothing, and you listen to
+  the signal to tell.
 
 ## Job tracker
 
