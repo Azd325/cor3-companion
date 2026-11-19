@@ -159,4 +159,4 @@ folder. Your settings stay. On Firefox there's nothing to do: it moves to the st
 
 COR3 Companion is a fan-made tool. It is not affiliated with, endorsed by or connected to cor3.gg or its
 developers. Every release's files are on the [releases page](https://github.com/nvanderwaal/cor3-companion/releases).
-Building and releasing: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Building and releasing: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Open source under the [MIT License](LICENSE).
