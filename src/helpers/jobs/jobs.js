@@ -169,6 +169,10 @@
     .sec { margin-top: 4px; color: #7f9aa3; font-size: 10px; text-transform: uppercase; }
     label { display: flex; gap: 6px; align-items: center; cursor: pointer; word-break: break-all; }
     label.chk span { text-decoration: line-through; opacity: .6; }
+    label > span { flex: 1; }
+    .cp { all: unset; flex: none; font-size: 10px; padding: 0 4px; border-radius: 3px; background: #1d3640; color: #76c1d1; cursor: pointer; }
+    .cp:hover { background: #2d4a55; color: #e6f6fa; }
+    .cp.ok { background: #144d30; color: #5df0a0; }
     .srv { display: flex; flex-wrap: wrap; gap: 3px 6px; align-items: center; }
     .srv .ip { flex: 1 1 150px; word-break: break-all; }
     .route { color: #7f9aa3; font-size: 10px; margin: 0 0 2px 8px; word-break: break-all; }
@@ -205,6 +209,18 @@
     window.addEventListener("mouseup", () => { if (drag) { drag = null; save(); } });
 
     panel.addEventListener("click", (e) => {
+      const cp = e.target.closest("button[data-copy]");
+      if (cp) {
+        // The button sits inside the to-do label; don't let the click tick the checkbox.
+        e.preventDefault();
+        copyText(cp.dataset.copy).then((ok) => {
+          cp.textContent = ok ? "copied" : "failed";
+          cp.classList.toggle("ok", ok);
+          clearTimeout(cp._t);
+          cp._t = setTimeout(() => { cp.textContent = "copy"; cp.classList.remove("ok"); }, 1200);
+        });
+        return;
+      }
       const btn = e.target.closest("button[data-act]");
       if (btn) {
         const act = btn.dataset.act;
@@ -221,6 +237,21 @@
       save(); render();
     });
     return true;
+  }
+
+  // Clipboard API first; the old execCommand route if the page doesn't allow it.
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;left:-9999px;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch { return false; }
   }
 
   function timeLeft(job) {
@@ -441,7 +472,7 @@
             const key = `${j.id}|${it.key}`;
             const chk = !!state.checks[key];
             html += `<label class="${chk ? "chk" : ""}"><input type="checkbox" data-key="${esc(key)}" ${chk ? "checked" : ""}>
-              <span>${it.kind ? esc(it.kind) + " " : ""}${esc(it.what)}: ${esc(it.text)}</span></label>`;
+              <span>${it.kind ? esc(it.kind) + " " : ""}${esc(it.what)}: ${esc(it.text)}</span>${it.what === "ip" && it.text ? `<button class="cp" data-copy="${esc(it.text)}" title="Copy IP">copy</button>` : ""}</label>`;
           }
         }
         if (servers.length) {

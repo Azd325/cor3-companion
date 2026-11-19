@@ -95,7 +95,8 @@ browser console (`[COR3 protocol]`), handy if the game changes its log.
 A panel you can drag around, minimise or hide with Alt+J. For every job you've taken it shows:
 
 - the time left, and **READY** (green border) once the game says the job can be completed,
-- a **to-do** list with the IPs, files and logs to handle, each with a checkbox you tick yourself,
+- a **to-do** list with the IPs, files and logs to handle, each with a checkbox you tick yourself, and a
+  **copy** button next to every IP that puts it on your clipboard,
 - the job's servers with your access: **admin**, **access**, **no access**, **via 1 hack**, **no route** or
   **maintenance**, or **? unknown** until you've opened the network map,
 - for a server you can't get into directly, the route from Home that you can walk now, e.g.
