@@ -29,39 +29,37 @@ helper on or off in your open cor3.gg tabs, the same as its shortcut.
 
 <img src="docs/menu.png" alt="Toolbar menu with a switch and shortcut for each of the helpers" width="300">
 
-When a newer release is out, the menu shows one small line under its header with a link to it (Chrome right away,
-Firefox only if it hasn't updated itself within 2 days). It checks GitHub at most every 6 hours, only while the
-menu is open.
+Copies from the Chrome Web Store and Firefox Add-ons update by themselves. Other copies (Chrome loaded by hand,
+or Firefox installed from GitHub before the store listing) check GitHub at most every 6 hours, only while the
+menu is open, and show one small line under the menu's header when a newer version is out.
 
 In the game it only reads what the game already sends to your browser, and it never sends anything to the game.
 The one thing it fills in is the Signal Decode code box, which you then confirm yourself.
+No account, no tracking: see the [privacy policy](PRIVACY.md).
+
+COR3 Companion is a fan-made tool. It is not affiliated with, endorsed by or connected to cor3.gg or its developers.
 
 ## Install
 
-Download the files from the [latest release](https://github.com/nvanderwaal/cor3-companion/releases/latest).
+- **Firefox:** [COR3 Companion on Firefox Add-ons](https://addons.mozilla.org/firefox/addon/AMO_SLUG/), then
+  **Add to Firefox**.
+- **Chrome, Edge, Brave:** [COR3 Companion in the Chrome Web Store](https://chromewebstore.google.com/detail/CHROME_EXTENSION_ID),
+  then **Add to Chrome**.
+
+Both update by themselves. A new version can take a day or two to arrive while the store reviews it.
 What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
 
-### Firefox
+If nothing shows up on cor3.gg, click the puzzle-piece icon in the toolbar and allow the extension on cor3.gg.
 
-1. Click `cor3-companion-firefox.xpi` in the latest release.
-2. Firefox asks to install the add-on; click **Continue to Installation**, then **Add**.
+**Moving from a copy you installed from GitHub:**
 
-The add-on is signed by Mozilla, so it works in normal Firefox and stays installed.
-It **updates itself** when a new release comes out (Firefox checks about once a day;
-`about:addons` > gear icon > **Check for Updates** checks right away).
+- *Chrome:* add it from the Chrome Web Store, then remove the old unpacked copy in `chrome://extensions` and
+  delete its folder. Your settings stay, because they're kept with cor3.gg.
+- *Firefox:* nothing to do. Your copy updates to the store version by itself and then gets updates from
+  Firefox Add-ons.
 
-If nothing shows up on cor3.gg, click the puzzle-piece icon in the toolbar and allow the add-on on cor3.gg.
-
-### Chrome (or Edge, Brave)
-
-1. Download `cor3-companion-chrome.zip` and unzip it into a folder you keep, e.g. `Documents\cor3-companion`.
-   Chrome loads the extension from that folder, so don't delete it.
-2. Open `chrome://extensions` (Edge: `edge://extensions`) and turn on **Developer mode** (top right).
-3. Click **Load unpacked** and pick that folder.
-
-Chrome can't update extensions from outside the Chrome Web Store. For a new version, unzip the new
-release's zip over the same folder and click the reload icon on the extension's card.
-Chrome may show a "developer mode extensions" notice at startup; that's normal for unpacked extensions.
+Every release's files are also on the [releases page](https://github.com/nvanderwaal/cor3-companion/releases)
+if you'd rather install by hand.
 
 ## ICE WALL Break
 

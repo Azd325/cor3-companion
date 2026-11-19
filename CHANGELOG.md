@@ -10,6 +10,12 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+### New
+
+- **COR3 Companion is now on the Chrome Web Store and Firefox Add-ons**, and updates by itself from there.
+  Chrome users who loaded it by hand: add it from the store and remove the old copy; your settings stay.
+  Firefox users: your copy moves to the store version by itself.
+
 ## 1.2.8 (2026-11-19)
 
 ### New

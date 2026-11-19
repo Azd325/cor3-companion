@@ -59,26 +59,43 @@ from the **Actions** tab (**Release** > **Run workflow**, where you can pick pat
 1. bumps `version` in `src/manifest.json` (`node scripts/bump.mjs`),
 2. moves the **Unreleased** section of `CHANGELOG.md` under the new version and uses it as the release
    notes (`node scripts/changelog.mjs`); if it's empty, the notes list the PRs merged since the last release,
-3. builds both packages and signs the Firefox one with Mozilla (`node scripts/sign.mjs`),
+3. builds both packages and submits the Firefox one to addons.mozilla.org, listed
+   (`node scripts/sign.mjs`), with the listing text from `store/`,
 4. commits the new version and changelog, tags it `vX.Y.Z` and publishes a GitHub release with
-   `cor3-companion-firefox.xpi`, `cor3-companion-chrome.zip` and `updates.json`.
+   `cor3-companion-firefox.xpi`, `cor3-companion-chrome.zip` and `updates.json` (the last one only
+   updates Firefox copies installed from GitHub before the store listing),
+5. uploads the Chrome zip to the Chrome Web Store and submits it for review
+   (`node scripts/chrome-upload.mjs`). A version still in review is withdrawn and replaced.
+
+Both stores review new versions. Mozilla usually approves within minutes; if it wants a human review,
+the run waits 12 minutes, then releases without the `.xpi` and AMO publishes it once approved. Google's
+review takes from hours to a few days, after which Chrome copies update by themselves.
+
+Store listings, screenshots and the privacy tab answers are in [`store/`](../store/listing.md).
+The privacy policy is [`PRIVACY.md`](../PRIVACY.md).
 
 **Release notes:** every PR that changes what players see adds a line under **Unreleased** in
 `CHANGELOG.md`, under **New**, **Improved** or **Fixed**, written for players. That's what the release
 page shows for that version.
 
-Changes to only the README, `CHANGELOG.md`, `docs/` or the workflow don't start a release. A run takes 3–5 minutes,
+Changes to only the README, `CHANGELOG.md`, `PRIVACY.md`, `docs/`, `store/` or the workflow don't start a release. A run takes 3–5 minutes,
 most of it "Waiting for approval..." while Mozilla signs; don't cancel it, a signed version can't be
 signed again. Pull after a release, since the workflow pushes the version commit to `main`.
 
-It needs two repository secrets (Settings > Secrets and variables > Actions):
-`WEB_EXT_API_KEY` (JWT issuer) and `WEB_EXT_API_SECRET` (JWT secret), from
-https://addons.mozilla.org/developers/addon/api/key/
+It needs these repository secrets (Settings > Secrets and variables > Actions):
+
+- `WEB_EXT_API_KEY` (JWT issuer) and `WEB_EXT_API_SECRET` (JWT secret), from
+  https://addons.mozilla.org/developers/addon/api/key/
+- `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET` and `CHROME_REFRESH_TOKEN` (a Google OAuth client with the
+  `https://www.googleapis.com/auth/chromewebstore` scope), `CHROME_PUBLISHER_ID` (Chrome Web Store
+  dashboard > Account) and `CHROME_EXTENSION_ID`. Without them the Chrome step is skipped.
+  See https://developer.chrome.com/docs/webstore/using-api
 
 ## Signing locally
 
 1. Copy `.env.example` to `.env` and fill in the same two keys (`.env` is git-ignored).
-2. Bump `version` in `src/manifest.json`, then run `node scripts/sign.mjs`.
+2. Bump `version` in `src/manifest.json`, then run `AMO_CHANNEL=unlisted node scripts/sign.mjs`
+   (without `AMO_CHANNEL=unlisted` it publishes the version on addons.mozilla.org).
    The signed `.xpi` lands in `web-ext-artifacts/`.
 
 Use the GitHub release instead where you can: a version signed locally can't be released by the workflow.

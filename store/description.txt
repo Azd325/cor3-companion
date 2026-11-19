@@ -1,0 +1,19 @@
+COR3 Companion adds small helpers to the cor3.gg browser game. Everything shows inside the game, and every helper has its own switch in the toolbar menu and an Alt shortcut.
+
+• ICE WALL Break (Alt+H): outlines where the target pattern can still fit on the board, and turns green once only one spot is left.
+• Protocol solver (Alt+P): the best next move in the cleaner-bot protocol minigame, with the fields to change outlined.
+• Daily ops (Alt+D): outlines the bad lines in System Log Integrity with the reason on each, and decodes Signal Decode and types the code in. You confirm it yourself.
+• Job tracker (Alt+J): your taken jobs with their to-do items, server access, the route to each server, maintenance times and server defence against your HACK power. Job cards on the market get a ✓ or ✗ for whether you can do the job now.
+• Expeditions (Alt+E): makes the risk/rewards popup on decisions clear with exact numbers, and shows the exact mission risk and each mercenary's death chance.
+• Loadout & market (Alt+L): shows what a program or hardware part would do to your setup, on the loadout page and on the market's cards, and stars the best upgrade.
+• Inventory (Alt+I): the sell price on every item, a border in its rarity colour, and your stash's total value.
+• Lighter screen (Alt+V, off by default): hides the moving backgrounds and the network map fog.
+• Top bar (Alt+B): a thin strip with what needs you now (jobs ready, a decision waiting, an expedition back) and the helper switches.
+
+Fair play: it only reads what the game already sends to your browser and never sends anything to the game. The one thing it fills in is the Signal Decode code box, which you then confirm yourself.
+
+Privacy: no account, no tracking, no data collection. It only runs on cor3.gg.
+
+Open source: https://github.com/nvanderwaal/cor3-companion
+
+COR3 Companion is a fan-made tool. It is not affiliated with, endorsed by or connected to cor3.gg or its developers.
