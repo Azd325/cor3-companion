@@ -36,7 +36,9 @@ the [latest release](https://github.com/nvanderwaal/cor3-companion/releases/late
 
 ### Firefox
 
-1. Click [`cor3-companion-firefox.xpi`](https://github.com/nvanderwaal/cor3-companion/releases/latest/download/cor3-companion-firefox.xpi).
+1. On the [releases page](https://github.com/nvanderwaal/cor3-companion/releases), click
+   `cor3-companion-firefox.xpi` in the newest release that has it. A new release gets it once Mozilla has
+   reviewed that version, which can take a day or two.
 2. Firefox asks to install the add-on: click **Continue to Installation**, then **Add**.
 
 It's signed by Mozilla and **updates itself**, also to the Firefox Add-ons version once that's out.

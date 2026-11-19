@@ -120,7 +120,8 @@ jobs:
 
           ### Install or update
 
-          **Firefox:** click `cor3-companion-firefox.xpi` to install (it updates itself after that).
+          **Firefox:** click `cor3-companion-firefox.xpi` to install (it updates itself after that). If it isn't here yet,
+          Mozilla is still reviewing this version: it's added automatically once approved, until then use the previous release's.
           **Chrome:** unzip `cor3-companion-chrome.zip` over your extension folder and click reload in `chrome://extensions`.
           Copies from the Chrome Web Store or Firefox Add-ons update by themselves, once the store has reviewed the version.
 
