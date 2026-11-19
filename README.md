@@ -68,11 +68,15 @@ A small panel you can drag anywhere, minimise or hide. For every job you've take
 - **Your access** to each server: admin, access, no access, via 1 hack, no route or maintenance.
 - **The route from Home** you can walk right now, e.g. Home → RM7-S4L2 → 10.0.0.7, with the servers you still
   have to hack in orange. It skips servers in maintenance and servers your HACK power can't beat.
-- **Maintenance** times, and each server's defence against your HACK power (**DEF 50 · HACK 42 ✗**).
+- **Maintenance** times, and each server's defence against your HACK power (**DEF 50 · HACK 42 ✗**). Only
+  programs whose HACK works on that type of server count.
+- **Your DECRYPT power** next to every file you have to decrypt, from programs that can open that file type
+  (**DECRYPT 18.4/25 ✗**). The power a file needs shows once you've analysed it in the game.
 
-On the market, every job card gets a green ✓ when you can do the job now or a red ✗ with the reason.
+On the market, every job card gets a green ✓ when you can do the job now or a red ✗ with the reason, such as a
+server your HACK can't beat or a file no installed program can decrypt.
 
-*Tip:* open the network map and your Loadout once, so the tracker knows the routes and your HACK power.
+*Tip:* open the network map and your Loadout once, so the tracker knows the routes and your program strengths.
 
 ## Expeditions
 

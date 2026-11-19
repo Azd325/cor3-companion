@@ -5,7 +5,7 @@
 (() => {
   "use strict";
 
-  const { esc, toMs, load, saveSoon, shadowHost, setHTML, check, shape } = window.__cor3;
+  const { esc, toMs, load, saveSoon, shadowHost, setHTML, check, shape, findProps } = window.__cor3;
 
   // ---------- times ----------
   // "2h 05m", "12m", "40s"; null when the time is unknown or past.
@@ -23,6 +23,8 @@
   const state = load(STORE_KEY, { jobs: {}, servers: {}, checks: {}, panel: { x: 20, y: 80, open: true, min: false } });
   // Raw copies of the last job lists, for checking in the console (window.__cor3JobTracker).
   const debug = { lastJobs: null, lastRecentJobs: null };
+  // The market's current offers by id, for checking each job card.
+  const offers = new Map();
   window.__cor3JobTracker = { debug, state };
   // Kept in localStorage, so the panel and the top bar show your jobs as soon
   // as the game opens again; the game's next job list replaces them.
@@ -44,6 +46,8 @@
     // complete), or the job was completed and handed in.
     const action = node.event && typeof node.event.action === "string" ? node.event.action : null;
     const d = node.data && typeof node.data === "object" && !Array.isArray(node.data) ? node.data : null;
+    // What the game says a file needs to decrypt (file analysis, failed decrypt).
+    if (noteNeed(d) || noteNeed(node)) changed = true;
     if (action && action.startsWith("job.") && d) check("jobs", "job updates", d.jobId != null, shape(d));
     if (action && d && d.jobId != null) {
       const id = String(d.jobId);
@@ -100,6 +104,8 @@
       // Offers in the market's job tab (not taken yet).
       state.market = { ...(state.market || {}), offers: node.jobs.length, at: Date.now() };
       debug.lastJobs = node.jobs;
+      offers.clear();
+      for (const j of node.jobs) if (j && j.id != null) offers.set(String(j.id), j);
       changed = true;
     }
     if (Array.isArray(node.recentJobs)) {
@@ -295,18 +301,128 @@
   // Maintenance starting within this time gets a warning.
   const SOON_MS = 2 * 3600 * 1000;
 
-  // Your best HACK power, from the loadout the loadout helper last saw.
-  function hackPower() {
-    const sp = window.__cor3Loadout?.state?.loadout?.resources?.softwarePower;
-    let best = null;
-    for (const p of Array.isArray(sp) ? sp : []) {
+  // ---------- program strength ----------
+  // Programs have abilities (HACK, DECRYPT, ...) with a power. A HACK ability
+  // can be limited to some server types, a DECRYPT ability to some file types
+  // (spec.serverTypes / spec.fileTypes); without such a list it works on all.
+  const pw = (x) => String(Math.round(x * 10) / 10); // power, 1 decimal
+  const typeKey = (t) => String(t ?? "").trim().toLowerCase().replace(/^\./, "");
+  const fits = (list, t) => !Array.isArray(list) || !list.length || !t ||
+    list.some((x) => typeKey(x) === typeKey(t));
+  // Installed abilities with their real power, from the loadout the loadout
+  // helper last saw; null until you've opened your Loadout once.
+  let memo = { L: null, out: null };
+  function installed() {
+    const L = window.__cor3Loadout?.state?.loadout;
+    if (memo.L === L && memo.at === L?.at) return memo.out;
+    const sp = L?.resources?.softwarePower;
+    memo = { L, at: L?.at, out: null };
+    if (!Array.isArray(sp)) return null;
+    const progs = [...(L.equippedSoftware || []), ...(L.ownedSoftware || [])];
+    const out = [];
+    for (const p of sp) {
+      const sw = progs.find((q) => q && q.id != null && q.id === p?.moduleId);
+      const specs = Array.isArray(sw?.specs) ? sw.specs : sw?.specs ? [sw.specs] : [];
       for (const a of p?.abilities || []) {
-        if (String(a?.type).toUpperCase() === "HACK" && typeof a.computedPower === "number") {
-          best = Math.max(best ?? 0, a.computedPower);
-        }
+        if (typeof a?.computedPower !== "number") continue;
+        const type = String(a.type).toUpperCase();
+        const spec = specs.find((x) => String(x?.type).toUpperCase() === type) || {};
+        out.push({ type, power: a.computedPower, name: sw?.name || "",
+          serverTypes: a.serverTypes || spec.serverTypes, fileTypes: a.fileTypes || spec.fileTypes });
       }
     }
+    return (memo.out = out);
+  }
+  // Best installed power of `type` that works on server type / file type `on`:
+  // a number (0 when no installed program fits), or null when the loadout isn't known.
+  function bestPower(type, on, listKey) {
+    const all = installed();
+    if (!all) return null;
+    let best = 0;
+    for (const a of all) if (a.type === type && fits(a[listKey], on)) best = Math.max(best, a.power);
     return best;
+  }
+  // Owned but not installed programs that could do it, for the tooltip.
+  function ownedFor(type, on, listKey) {
+    const L = window.__cor3Loadout?.state?.loadout;
+    const on2 = new Set((L?.equippedSoftware || []).map((q) => q?.id));
+    return (L?.ownedSoftware || []).filter((sw) => sw && !on2.has(sw.id) &&
+      (Array.isArray(sw.specs) ? sw.specs : sw.specs ? [sw.specs] : [])
+        .some((x) => String(x?.type).toUpperCase() === type && fits(x[listKey], on)))
+      .map((sw) => sw.name).filter(Boolean);
+  }
+
+  // Your best HACK power against this server (only programs that work on its type).
+  const hackPower = (s) => bestPower("HACK", s?.serverTypeName, "serverTypes");
+  const hackWord = (s, hack) => {
+    if (hack !== 0) return `your HACK ${pw(hack)}`;
+    const own = ownedFor("HACK", s?.serverTypeName, "serverTypes");
+    return `no installed HACK program works on ${s?.serverTypeName || "this"} servers` +
+      (own.length ? ` (you own ${own.join(", ")})` : "");
+  };
+
+  // Why your HACK can't beat this server's defence.
+  const tooStrong = (s) => {
+    const hack = hackPower(s);
+    return hack === 0 ? hackWord(s, 0) : `defence ${s.serverDefenceRate} is above your HACK ${pw(hack)}`;
+  };
+
+  // ---------- decrypting ----------
+  // Required DECRYPT power per file, from what the game sends when you analyse
+  // a file or a decrypt fails for lack of power: file id or name -> number.
+  const needs = {};
+  const DECRYPT_COND = /decrypt/i;
+  const extOf = (name) => { const m = /\.([a-z0-9]+)$/i.exec(String(name || "")); return m ? m[1] : ""; };
+  const numIn = (o, keys) => { for (const k of keys) if (typeof o?.[k] === "number" && o[k] > 0) return o[k]; return null; };
+  const NEED_KEYS = ["requiredDecryptPower", "decryptPowerRequired", "requiredPower", "decryptPower", "encryptionLevel"];
+  // Files a job asks you to decrypt: { name, ext, need }.
+  function decryptFiles(job) {
+    const out = [];
+    for (const item of job?.conditions?.items || []) {
+      const kind = String(item?.type || item?.action || item?.kind || item?.conditionType || "");
+      if (!DECRYPT_COND.test(kind)) continue;
+      const d = item.details || {};
+      const files = (d.files || []).map((f) => ({ id: f?.id, name: f?.name || "", f }))
+        .concat((d.fileNames || []).map((n) => ({ name: n })));
+      if (!files.length) files.push({ name: d.fileName || "" });
+      for (const f of files) {
+        const ext = typeKey(d.fileExtension || d.fileType || f.f?.extension || f.f?.fileType || extOf(f.name));
+        const need = numIn(f.f, NEED_KEYS) ?? numIn(d, NEED_KEYS) ?? needs[f.id] ?? needs[f.name] ?? null;
+        out.push({ name: f.name, ext, need });
+      }
+    }
+    return out;
+  }
+  // Can you decrypt this file now? { ok: true | false | null, text, tip }
+  function decryptCheck(f) {
+    const what = f.ext ? `.${f.ext}` : "this file";
+    const power = bestPower("DECRYPT", f.ext, "fileTypes");
+    if (power == null) return { ok: null, text: "DECRYPT ?", tip: "open your Loadout so the tracker knows your DECRYPT power" };
+    if (power === 0) {
+      const own = ownedFor("DECRYPT", f.ext, "fileTypes");
+      return { ok: false, text: `DECRYPT ${what} &#10007;`,
+        tip: `no installed program can decrypt ${what}` + (own.length ? `; install ${own.join(" or ")}` : "") };
+    }
+    if (f.need == null) return { ok: true, text: `DECRYPT ${pw(power)}`, tip: `your DECRYPT power for ${what} is ${pw(power)}; the game hasn't said how much this file needs yet` };
+    const ok = power >= f.need;
+    return { ok, text: `DECRYPT ${pw(power)}/${pw(f.need)} ${ok ? "&#10003;" : "&#10007;"}`,
+      tip: ok ? `your DECRYPT ${pw(power)} beats the ${pw(f.need)} this file needs` : `this file needs DECRYPT ${pw(f.need)}, you have ${pw(power)}` };
+  }
+  // Why decrypting blocks this job, or [] when it doesn't.
+  const decryptBlockers = (job) => decryptFiles(job).map((f) => [f, decryptCheck(f)])
+    .filter(([, c]) => c.ok === false).map(([f, c]) => `${f.name || "file"}: ${c.tip}`);
+  // Remember a required DECRYPT power the game told us about.
+  function noteNeed(d) {
+    if (!d || typeof d !== "object") return false;
+    let need = null;
+    if (d.kind === "insufficient_power" && String(d.ability || "DECRYPT").toUpperCase() === "DECRYPT") need = numIn(d, ["required"]);
+    else if (typeof d.canDecrypt === "boolean") need = numIn(d, ["decryptPower", "requiredPower", "required"]);
+    if (need == null) return false;
+    let hit = false;
+    for (const k of [d.fileId, d.id, d.file?.id, d.fileName, d.name, d.file?.name]) {
+      if (k != null && k !== "") { needs[k] = need; hit = true; }
+    }
+    return hit;
   }
 
   // Extra facts about a server: maintenance times and defence against your HACK power.
@@ -323,11 +439,12 @@
     }
     const def = s.serverDefenceRate;
     if (!s.isAccessible && typeof def === "number" && def > 0) {
-      const hack = hackPower();
+      const hack = hackPower(s);
       out.push(hack == null
         ? { cls: "", text: `DEF ${def}`, tip: "defence rate; open your Loadout to compare with your HACK power" }
-        : { cls: hack >= def ? "ok" : "bad", text: `DEF ${def} · HACK ${hack} ${hack >= def ? "&#10003;" : "&#10007;"}`,
-            tip: hack >= def ? "your best HACK power beats the defence rate" : "your best HACK power is below the defence rate" });
+        : { cls: hack >= def ? "ok" : "bad", text: `DEF ${def} · HACK ${pw(hack)} ${hack >= def ? "&#10003;" : "&#10007;"}`,
+            tip: hack >= def ? "your best HACK power for this server type beats the defence rate"
+              : hack === 0 ? hackWord(s, 0) : "your best HACK power for this server type is below the defence rate" });
     }
     return out;
   }
@@ -338,9 +455,10 @@
   // or ones your HACK power beats, and none in maintenance. Fewer hacks win,
   // then fewer hops.
   const inMaint = (s) => s.isInMaintenance && !(toMs(s.maintenanceEndsAt) <= Date.now());
-  function canHack(s, hack) {
+  function canHack(s) {
     const def = s.serverDefenceRate;
     if (typeof def !== "number" || def <= 0) return true;
+    const hack = hackPower(s);
     return hack == null ? null : hack >= def;
   }
   function neighbours() {
@@ -381,8 +499,7 @@
     if (inMaint(s)) return { ok: false, cls: "warn", text: "", tip: "in maintenance" };
     if (s.hasAdminAccess) return { ok: true, cls: "ok", text: "admin", tip: "admin access" };
     if (s.isAccessible) return { ok: true, cls: "ok", text: "access", tip: "access" };
-    const hack = hackPower();
-    const target = canHack(s, hack);
+    const target = canHack(s);
     const hackTip = target == null ? "open your Loadout to compare its defence with your HACK power" : "";
     if (!state.net?.home || !state.servers[state.net.home]) {
       // No links known yet: fall back to what the game says.
@@ -396,7 +513,7 @@
       const h = state.servers[ip];
       if (!h || inMaint(h)) return null;
       if (h.isAccessible || ip === state.net.home) return 1;
-      const c = canHack(h, hack);
+      const c = canHack(h);
       if (c === false) return null;
       if (c == null) unsure = true;
       return 10; // a hack on the way
@@ -409,7 +526,7 @@
         const h = state.servers[ip];
         if (!h) continue;
         if (inMaint(h)) { const l = shortLeft(h.maintenanceEndsAt); why = `${h.serverName || ip} is in maintenance${l ? ` (${l} left)` : ""}`; break; }
-        if (canHack(h, hack) === false && !h.isAccessible) { why = `${h.serverName || ip} defence ${h.serverDefenceRate} is above your HACK ${hack}`; break; }
+        if (canHack(h) === false && !h.isAccessible) { why = `${h.serverName || ip}: ${tooStrong(h)}`; break; }
       }
       return { ok: false, cls: "bad", text: "no route", tip: why };
     }
@@ -477,11 +594,16 @@
         if (j.features?.[0]) html += `<div class="desc">${esc(j.features[0])}</div>`;
         if (items.length) {
           html += `<div class="sec">To do</div>`;
+          const dec = done ? [] : decryptFiles(j);
           for (const it of items) {
             const key = `${j.id}|${it.key}`;
             const chk = !!state.checks[key];
+            // Files to decrypt get your DECRYPT power next to them.
+            const f = !chk && DECRYPT_COND.test(it.kind) && dec.find((x) => x.name === it.text);
+            const c = f && decryptCheck(f);
+            const badge = c ? `<span class="badge ${c.ok === false ? "bad" : c.ok && f.need != null ? "ok" : ""}" title="${esc(c.tip)}">${c.text}</span>` : "";
             html += `<label class="${chk ? "chk" : ""}"><input type="checkbox" data-key="${esc(key)}" ${chk ? "checked" : ""}>
-              <span>${it.kind ? esc(it.kind) + " " : ""}${esc(it.what)}: ${esc(it.text)}</span>${it.what === "ip" && it.text ? `<button class="cp" data-copy="${esc(it.text)}" title="Copy IP">copy</button>` : ""}</label>`;
+              <span>${it.kind ? esc(it.kind) + " " : ""}${esc(it.what)}: ${esc(it.text)}</span>${badge}${it.what === "ip" && it.text ? `<button class="cp" data-copy="${esc(it.text)}" title="Copy IP">copy</button>` : ""}</label>`;
           }
         }
         if (servers.length) {
@@ -584,23 +706,43 @@
       return `${token}: in maintenance${l ? `, ${l} left` : ""}`;
     }
     if (r.ok === true) return null;
-    const def = s.serverDefenceRate, hack = hackPower();
+    const def = s.serverDefenceRate, hack = hackPower(s);
     if (r.ok === false && r.text !== "no route" && typeof def === "number" && hack != null && hack < def) {
-      return `${token}: defence ${def} is above your HACK ${hack}`;
+      return `${token}: ${tooStrong(s)}`;
     }
     return `${token}: ${r.tip}`;
   }
 
   // One mark per job card: ✓ when you can do the job now (every server is
   // yours or within reach), ✗ otherwise. Hovering it says what blocks it.
+  // The job behind a card, from the card's React props (or its id in the
+  // market's offers and your taken jobs).
+  const jobLike = (o) => o && typeof o === "object" && o.id != null && ("conditions" in o || "relatedServers" in o);
+  function cardJob(el) {
+    return findProps(el, (p) => {
+      if (jobLike(p)) return p;
+      for (const k in p) if (jobLike(p[k])) return p[k];
+      const id = p.jobId ?? null;
+      return id != null ? offers.get(String(id)) || state.jobs[String(id)] || null : null;
+    }, 15);
+  }
+
   function annotateJobCards() {
     for (const { el, list } of serverLines()) {
       const tokens = list.split(",").map((t) => t.trim()).filter((t) => t && t !== "N/A");
       let mark = el.querySelector(`:scope > .${MARK_CLASS}`);
       if (!tokens.length) { if (mark) mark.remove(); continue; }
-      const blocks = tokens.map(blocker).filter(Boolean);
+      const job = cardJob(el);
+      const files = job ? decryptFiles(job) : [];
+      const blocks = tokens.map(blocker).filter(Boolean).concat(job ? decryptBlockers(job) : []);
       const ok = !blocks.length;
-      const tip = ok ? "You can do this job now: every server is yours or within reach" : `Blocked by:\n${blocks.join("\n")}`;
+      const unsure = files.some((f) => decryptCheck(f).ok === null);
+      const tip = ok
+        ? "You can do this job now: every server is yours or within reach" +
+          (!files.length ? "" : unsure ? "; open your Loadout to check your DECRYPT power"
+            : files.every((f) => f.need != null) ? ", and your DECRYPT is strong enough"
+            : ", and you have a DECRYPT program for its files (the game shows the power a file needs when you analyse it)")
+        : `Blocked by:\n${blocks.join("\n")}`;
       if (!mark) {
         mark = document.createElement("span");
         mark.className = MARK_CLASS;
