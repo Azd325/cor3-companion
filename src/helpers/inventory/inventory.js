@@ -6,7 +6,7 @@
 // Reads only; never sends anything.
 (() => {
   "use strict";
-  const { findProps, load, save } = window.__cor3;
+  const { findProps, load, save, check, shape, cache } = window.__cor3;
 
   const PRICE_CLASS = "cor3-inv-price", SUM_CLASS = "cor3-inv-sum", TOP_ATTR = "data-cor3-inv-top";
   // Border per rarity (the game's `tier`); common items get none.
@@ -29,15 +29,24 @@
   // ---------- stash data ----------
   // The stash reply: { items: [{ id, name, sellPrice, canSell, quantity, ... }], maxCapacity, currentUsage }.
   let stash = null; // { items: Map(id -> item), used, max }
+  // Kept for a day, so prices show the moment you open the inventory again;
+  // the game's fresh stash replaces it.
+  const saved = cache("cor3-cache-stash", 24 * 3600e3);
+  if (saved.data && Array.isArray(saved.data.items)) {
+    stash = { items: new Map(saved.data.items.map((it) => [String(it.id), it])), used: saved.data.used, max: saved.data.max };
+  }
   function scan(node, depth) {
     if (!node || typeof node !== "object" || depth > 6) return;
     if (node instanceof Uint8Array || node instanceof Date) return;
     if (Array.isArray(node)) { for (const x of node) scan(x, depth + 1); return; }
     if (Array.isArray(node.items) && "maxCapacity" in node) {
+      check("inventory", "stash data", !node.items.length ||
+        node.items.some((it) => it && it.id != null && "sellPrice" in it), shape(node.items[0]));
       const items = new Map();
       for (const it of node.items) if (it && it.id != null) items.set(String(it.id), it);
       stash = { items, used: node.currentUsage ?? node.items.length, max: node.maxCapacity };
-      queue();
+      saved.put({ items: [...items.values()], used: stash.used, max: stash.max });
+      run();
       return;
     }
     for (const k in node) {
@@ -116,14 +125,11 @@
     if (sum.textContent !== text) sum.textContent = text;
   }
 
-  let queued = false;
   function run() {
-    queued = false;
     if (!state.enabled) return;
     try { annotate(); } catch (e) { console.warn("[inventory helper]", e); }
   }
-  // The page changes a lot; look at most a few times a second.
-  function queue() { if (!queued) { queued = true; setTimeout(run, 300); } }
-  new MutationObserver(queue).observe(document.body, { childList: true, subtree: true });
-  setInterval(run, 2000);
+  // Follows the game's page when tiles appear or change, at most a few times
+  // a second, since it looks at every game component.
+  window.__cor3.onDom(run, 300);
 })();

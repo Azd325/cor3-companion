@@ -239,5 +239,5 @@
   });
   window.__cor3DailyOps = { checkLine, decodeSignal };
 
-  setInterval(() => { try { tick(); } catch (e) { console.warn("[COR3 daily ops]", e); } }, 300);
+  window.__cor3.every(300, tick, "COR3 daily ops");
 })();

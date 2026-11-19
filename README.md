@@ -134,6 +134,9 @@ A thin strip at the top of the game that only shows what needs you: **Jobs 2 · 
 **Decision 2m 10s** waiting on an expedition, or **Expedition back** with loot waiting. Click a part to jump
 there. **Helpers ▾** has all the switches. Click **◆ COR3** to shrink it to a single diamond.
 
+Your jobs, an open decision and expeditions on their way back show as soon as the game opens, from what the
+helpers saw last time, until the game sends fresh data.
+
 ## Lighter screen
 
 Hides the game's moving background videos and the fog on the network map, so the game uses less of your computer.
@@ -150,6 +153,10 @@ Off until you switch it on.
 **Switching to the store version later?**
 On Chrome, add it from the Chrome Web Store, then remove the old copy in `chrome://extensions` and delete its
 folder. Your settings stay. On Firefox there's nothing to do: it moves to the store version by itself.
+
+**A helper shows ⚠?** The game changed the data that helper reads, so it may show wrong or no info until
+COR3 Companion is updated. You'll see it on **Helpers ▾** in the top bar and in the toolbar menu. The other
+helpers keep working. [Open an issue](https://github.com/nvanderwaal/cor3-companion/issues) if there isn't one yet.
 
 **Found a bug or have an idea?** [Open an issue](https://github.com/nvanderwaal/cor3-companion/issues).
 

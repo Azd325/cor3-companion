@@ -33,6 +33,18 @@ A new helper:
 3. In the script, register its switch with `window.__cor3.helper("<id>", get, set)` and read game data
    with `window.__cor3.onPacket(fn)`.
 
+### Shared tools in `window.__cor3` (core.js)
+
+| Call | Use |
+|---|---|
+| `onPacket(fn)` | every decoded websocket packet (socket.js hooks the socket once for everyone) |
+| `onDom(fn, gapMs?)` | runs `fn` soon after the game changes the page; one shared observer, ignores our own `cor3-…` nodes, skips hidden tabs. Use it instead of polling the page on a timer |
+| `every(ms, fn, tag)` | a timer that skips while the tab is hidden; only for countdowns and the minigame boards |
+| `emit(topic)` / `on(topic, fn)` | tell other helpers your data changed (`jobs`, `expeditions`, `health`); the top bar redraws at once |
+| `cache(key, maxAgeMs)` | game data kept between visits: `{ data, at, put(data) }`. Bump `CACHE_V` in core.js when a cached layout changes |
+| `saveSoon(key, value)` | `save` at most once a second, flushed when the tab is hidden or closed |
+| `check(id, what, ok, sample)` | report whether game data you recognised has the fields you use. Three misses with no hit since the game opened flag the helper with a ⚠ in the top bar and toolbar menu; `"*"` flags every `net: true` helper. Check only data you're sure is the right packet, so a flag means the game really changed |
+
 The build packs everything in `src/` except `manifest.json` (written per browser) and `.svg` files.
 The toolbar icons in `src/icons/` are made from `src/icons/icon.svg` with `node scripts/make-icons.mjs`.
 

@@ -214,5 +214,5 @@
   });
   window.__cor3Protocol = { makeSolver, readLog };
 
-  setInterval(() => { try { tick(); } catch (e) { console.warn("[COR3 protocol]", e); } }, 250);
+  window.__cor3.every(250, tick, "COR3 protocol");
 })();

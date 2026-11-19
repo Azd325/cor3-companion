@@ -18,6 +18,12 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ### Improved
 
+- **Faster and lighter.** Helpers update the moment the game sends new data or changes the screen, instead of
+  checking on a timer, and they pause while the game's tab is in the background.
+- **Picks up where you left off.** Your jobs, an open expedition decision, expeditions on their way back and
+  your stash's prices show as soon as you open the game again, until the game sends fresh data.
+- **Warns when the game changes.** If the game changes the data a helper reads, that helper gets a quiet ⚠ in
+  the top bar's Helpers menu and in the toolbar menu, so you know its info may be off until an update.
 - Needs **Firefox 140** or newer (Firefox for Android 142), the versions that support the add-on's
   "collects no data" label.
 

@@ -14,8 +14,10 @@ data, and it has no account, analytics, ads or tracking.
 
 ## What it stores
 
-- Your helper switches, panel positions and the game data the helpers need (for example the network map
-  and your HACK power) are saved in your browser's storage for cor3.gg. They never leave your computer.
+- Your helper switches, panel positions and the game data the helpers need (for example the network map,
+  your HACK power, your expeditions and your stash's prices) are saved in your browser's storage for
+  cor3.gg, so the helpers work as soon as you open the game again. Expedition and stash data is dropped
+  after a day. None of it ever leaves your computer.
 - Uninstalling the extension, or clearing cor3.gg's site data, removes them.
 
 ## Network requests

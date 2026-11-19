@@ -18,7 +18,11 @@ for (const h of globalThis.__cor3Helpers) {
   const desc = document.createElement("div");
   desc.className = "desc";
   desc.textContent = h.desc;
-  txt.append(name, desc);
+  // Shown when the game changed the data this helper reads.
+  const warn = document.createElement("div");
+  warn.className = "warn";
+  warn.hidden = true;
+  txt.append(name, desc, warn);
   const ctl = document.createElement("div");
   ctl.className = "ctl";
   const sw = document.createElement("button");
@@ -42,12 +46,16 @@ async function send(tab, msg) {
   try { return await api.tabs.sendMessage(tab.id, { cor3Helper: true, ...msg }); } catch (_) { return null; }
 }
 
-function show(states) {
+function show(states, warnings) {
   for (const li of rows) {
     const sw = li.querySelector(".sw");
     const on = states ? states[li.dataset.id] : undefined;
     sw.disabled = on === undefined;
     sw.setAttribute("aria-checked", on ? "true" : "false");
+    const w = warnings && warnings[li.dataset.id];
+    const line = li.querySelector(".warn");
+    line.hidden = !w;
+    line.textContent = w ? `\u26a0 The game's ${w} changed. This may show wrong or no info until an update.` : "";
   }
   if (!states) hint.textContent = "Open cor3.gg (or reload it) to switch helpers here. Shortcuts work in the game.";
 }
@@ -59,7 +67,7 @@ async function refresh() {
   tabs.sort((a, b) => (b.active === true) - (a.active === true));
   for (const t of tabs) {
     const r = await send(t, { type: "get" });
-    if (r && r.states) return show(r.states);
+    if (r && r.states) return show(r.states, r.warnings);
   }
   show(null);
 }
@@ -67,12 +75,12 @@ async function refresh() {
 for (const li of rows) {
   li.querySelector(".sw").addEventListener("click", async (e) => {
     const on = e.currentTarget.getAttribute("aria-checked") !== "true";
-    let states = null;
+    let reply = null;
     for (const t of tabs) {
       const r = await send(t, { type: "set", id: li.dataset.id, on });
-      if (r && r.states && !states) states = r.states;
+      if (r && r.states && !reply) reply = r;
     }
-    show(states);
+    show(reply && reply.states, reply && reply.warnings);
   });
 }
 

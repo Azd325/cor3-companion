@@ -13,7 +13,7 @@
   "use strict";
 
   const SCORE_CLASS = "cor3-exp-score";
-  const { findProps, load, save } = window.__cor3;
+  const { findProps, load, save, check, shape, cache, toMs } = window.__cor3;
   const { GREEN, RED, GREY } = window.__cor3.color;
 
   const AMBER = "#ffc966";
@@ -57,15 +57,22 @@
   // Expeditions with their status and end time, for the top bar.
   const expeditions = new Map(); // expedition id -> { status, endTime, opened }
   window.__cor3Expeditions = { decisions, expeditions };
+  let dirty = false;
 
   function keepExpedition(exp) {
     if (exp.id == null || typeof exp.status !== "string" || !("endTime" in exp)) return;
     if (!("riskScore" in exp) && !("mercenary" in exp)) return;
     expeditions.set(String(exp.id), { status: exp.status, endTime: exp.endTime, opened: !!exp.containerOpenedAt });
+    dirty = true;
   }
 
   function keepDecision(msg, exp) {
     if (!msg || msg.id == null || !Array.isArray(msg.decisionOptions)) return;
+    if (msg.decisionOptions.length) {
+      check("expeditions", "decision options", msg.decisionOptions.some((o) =>
+        o && typeof o.riskModifier === "number" && typeof o.lootModifier === "number"), shape(msg.decisionOptions[0]));
+    }
+    dirty = true;
     const old = decisions.get(String(msg.id)) || {};
     decisions.set(String(msg.id), {
       options: msg.decisionOptions,
@@ -81,7 +88,10 @@
   let lastOdds = null;
   function keepOdds(node) {
     const oc = node.outcomeChances;
-    if (!oc || typeof oc !== "object" || typeof oc.deathChance !== "number") return;
+    if (!oc || typeof oc !== "object") return;
+    check("expeditions", "mercenary odds", typeof oc.deathChance === "number", shape(oc));
+    if (typeof oc.deathChance !== "number") return;
+    dirty = true;
     const o = { death: oc.deathChance, fail: typeof oc.failureSurviveChance === "number" ? oc.failureSurviveChance : null,
                 cost: typeof node.totalCost === "number" ? node.totalCost : null,
                 risk: typeof node.riskScore === "number" ? node.riskScore : null };
@@ -104,7 +114,33 @@
       if (v && typeof v === "object" && k !== "messages") scan(v, depth + 1);
     }
   }
-  window.__cor3.onPacket(scan);
+  // Kept for a day, so the top bar shows an open decision or an expedition
+  // on its way back as soon as the game opens again. Decisions past their
+  // deadline and expeditions you've opened are left out.
+  const DAY = 24 * 3600e3;
+  const saved = cache("cor3-cache-expeditions", DAY);
+  if (saved.data) {
+    for (const [id, e] of saved.data.expeditions || []) if (!expeditions.has(id)) expeditions.set(id, e);
+    for (const [id, d] of saved.data.decisions || []) if (!decisions.has(id)) decisions.set(id, d);
+    for (const [id, o] of saved.data.odds || []) if (!odds.has(id)) odds.set(id, o);
+  }
+  function keep() {
+    const now = Date.now();
+    saved.put({
+      expeditions: [...expeditions].filter(([, e]) => !e.opened && !(toMs(e.endTime) < now - DAY)),
+      decisions: [...decisions].filter(([, d]) => isOpen(d)),
+      odds: [...odds],
+    });
+  }
+
+  window.__cor3.onPacket((data) => {
+    dirty = false;
+    scan(data, 0);
+    if (!dirty) return;
+    keep();
+    window.__cor3.emit("expeditions");
+    run();
+  });
 
   const normText = (x) => String(x ?? "").trim().toLowerCase();
   const isOpen = (d) => !d.isResolved && !(Date.parse(d.deadline) < Date.now());
@@ -334,16 +370,13 @@
     }
   }
 
-  // The popup only lives while hovering, so react to DOM changes, not a timer.
-  let queued = false;
+  // The popup only lives while hovering, so react to page changes, not a timer.
   function run() {
-    queued = false;
     if (!state.enabled) return;
     try { annotatePopups(); annotateRiskScore(); annotateMercs(); }
     catch (e) { console.warn("[expeditions helper]", e); }
-  };
-  new MutationObserver(() => {
-    if (!queued) { queued = true; requestAnimationFrame(run); }
-  }).observe(document.body, { childList: true, subtree: true, characterData: true });
-  setInterval(run, 1000);
+  }
+  window.__cor3.onDom(run);
+  // The time left to decide counts down.
+  window.__cor3.every(1000, run, "expeditions helper");
 })();

@@ -16,13 +16,30 @@
     }
   }
 
+  // Game changes: if most of the game's frames stop decoding, the game has
+  // changed how it talks to its server, and every helper that reads its data
+  // is flagged (window.__cor3.check).
+  const { check } = window.__cor3;
+  let frames = 0, failed = 0;
+  function decoded(buf) {
+    let data;
+    try { data = decodeMsgpack(buf); } catch (_) { data = undefined; }
+    frames++;
+    if (data === undefined) failed++;
+    else onPacket(data);
+    if (frames >= 10) {
+      check("*", "messages", failed / frames < 0.8, `${failed} of ${frames} frames unreadable`);
+      frames = failed = 0;
+    }
+  }
+
   const NativeWS = window.WebSocket;
   function handleFrame(ev) {
     const d = ev.data;
     if (d instanceof ArrayBuffer) {
-      try { onPacket(decodeMsgpack(d)); } catch (_) {}
+      decoded(d);
     } else if (typeof Blob !== "undefined" && d instanceof Blob) {
-      d.arrayBuffer().then((b) => { try { onPacket(decodeMsgpack(b)); } catch (_) {} });
+      d.arrayBuffer().then(decoded, () => {});
     } else if (typeof d === "string" && d.length > 2 && d[0] === "4") {
       // Plain socket.io text frame fallback: 42["event",{...}]
       const i = d.indexOf("[");

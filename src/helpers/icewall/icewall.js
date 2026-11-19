@@ -134,5 +134,6 @@
     tick();
   });
 
-  setInterval(tick, 250);
+  // The board is only on screen; look at it 4 times a second, not while the tab is hidden.
+  window.__cor3.every(250, tick, "ICE WALL helper");
 })();

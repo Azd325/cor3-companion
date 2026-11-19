@@ -7,10 +7,15 @@
   function ask(msg) {
     return new Promise((resolve) => {
       const nonce = Math.random().toString(36).slice(2);
-      const done = (states) => { window.removeEventListener("message", onMsg); clearTimeout(timer); resolve(states); };
+      const done = (reply) => { window.removeEventListener("message", onMsg); clearTimeout(timer); resolve(reply); };
       const onMsg = (e) => {
         const m = e.data;
-        if (e.source === window && m && m.cor3Helper === "states" && m.nonce === nonce) done(m.states || {});
+        if (e.source === window && m && m.cor3Helper === "states" && m.nonce === nonce) {
+          // Plain data only: the page can't hand the extension anything else.
+          const warnings = {};
+          for (const [id, w] of Object.entries(m.warnings || {})) if (typeof w === "string") warnings[id] = w.slice(0, 200);
+          done({ states: m.states || {}, warnings });
+        }
       };
       const timer = setTimeout(() => done(null), 1000);
       window.addEventListener("message", onMsg);
@@ -20,7 +25,7 @@
 
   api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (!msg || msg.cor3Helper !== true) return false;
-    ask(msg).then((states) => sendResponse({ states }));
+    ask(msg).then((reply) => sendResponse(reply || { states: null }));
     return true; // answer asynchronously
   });
 })();
