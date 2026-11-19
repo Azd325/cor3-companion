@@ -14,6 +14,7 @@ on:
     branches: [main]
     paths-ignore:
       - "README.md"
+      - "CHANGELOG.md"
       - ".gitignore"
       - ".env.example"
       - ".gitattributes"
@@ -55,6 +56,13 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Releasing $VERSION"
 
+      # Moves CHANGELOG.md's "Unreleased" section under the new version and
+      # writes it to notes.md for the release (the merged PR titles if empty).
+      - name: Release notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: node scripts/changelog.mjs "$VERSION" notes.md
+
       - name: Build and sign
         env:
           WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
@@ -87,7 +95,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/manifest.json
+          git add src/manifest.json CHANGELOG.md
           git commit -m "Release v$VERSION"
           git tag "v$VERSION"
           # Pushes made with GITHUB_TOKEN don't start this workflow again.
@@ -98,9 +106,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          cat > notes.md <<'EOF'
+          cat >> notes.md <<'EOF'
+
+          ---
+
+          ### Install or update
+
           **Firefox:** click `cor3-companion-firefox.xpi` to install (it updates itself after that).
           **Chrome:** unzip `cor3-companion-chrome.zip` over your extension folder and click reload in `chrome://extensions`.
+
+          Every version's changes: [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
 
           Find it useful? [Buy me a coffee ☕](https://buymeacoffee.com/nvanderwaal)
           EOF
