@@ -123,6 +123,8 @@ When a drone event asks for a decision, hovering an option shows the game's popu
 **Rewards** chevrons, which are small and coloured the wrong way round ("risk up" is green). The helper
 makes that popup clear:
 
+<img src="docs/expeditions.png" alt="Events panel with an option's popup showing Trade-off: +30 loot for +10 risk, Mission risk 16 → 26 and the time left to decide" width="620">
+
 - After each word it writes what changes and by how much, in the right colour: Risk **HIGHER +8** (red),
   **LOWER −20** (green) or **SAME**; Rewards **MORE +3** (green), **LESS −2** (red) or **SAME**.
 - A line under it sums the option up: **★ No downside**, **Trade-off: +3 loot for +8 risk**,
@@ -188,6 +190,8 @@ nothing to say:
 Click **◆ COR3** to shrink the bar to a single diamond, or press Alt+B to hide it. It remembers your choice.
 
 ## Inventory
+
+<img src="docs/inventory.png" alt="Inventory with the stash value line, each item's sell price in its corner and rarity borders" width="336">
 
 When you open your inventory, every item you can sell gets its sell price in its corner, e.g. **12k cr**.
 Items also get a border in their rarity colour, using the rarity the game gives each item: blue for rare,
