@@ -16,6 +16,16 @@ and uses it as the release notes. Leave out headings that have nothing under the
   themselves. On Chrome, once the store version is out, add it from there and remove the old copy; your
   settings stay.
 
+### Improved
+
+- Needs **Firefox 140** or newer (Firefox for Android 142), the versions that support the add-on's
+  "collects no data" label.
+
+## 1.2.9 (skipped)
+
+Not released on GitHub: the release run sent this version to Firefox Add-ons for review, then stopped before
+the GitHub release. Its changes ship in the next version.
+
 ## 1.2.8 (2026-11-19)
 
 ### New

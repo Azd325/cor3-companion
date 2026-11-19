@@ -185,7 +185,7 @@
     const solved = hist.length && hist[hist.length - 1].mismatched === 0;
     if (solved) { note.remove(); return; }
     if (!res.cands.length) {
-      note.innerHTML = `<span style="color:${color.RED}">No combination fits these results.</span>`;
+      window.__cor3.setHTML(note, `<span style="color:${color.RED}">No combination fits these results.</span>`);
       return;
     }
     if (!res.move) { note.remove(); return; }
@@ -193,9 +193,9 @@
     const sure = res.cands.length === 1;
     const odds = !sure && res.move.wins < res.cands.length
       ? ` · <span style="color:${color.GREY}">wins ${res.move.wins} of ${res.cands.length}</span>` : "";
-    note.innerHTML = `<span style="color:${sure ? color.GREEN : color.CYAN}">${sure ? "ANSWER" : "NEXT"}</span> ` +
+    window.__cor3.setHTML(note, `<span style="color:${sure ? color.GREEN : color.CYAN}">${sure ? "ANSWER" : "NEXT"}</span> ` +
       `<b>${target.map(window.__cor3.esc).join(" · ")}</b>` +
-      (sure ? "" : ` · <span style="color:${color.GREY}">${res.cands.length} possible</span>`) + odds;
+      (sure ? "" : ` · <span style="color:${color.GREY}">${res.cands.length} possible</span>`) + odds);
     buttons.forEach((b, f) => {
       if (f < target.length && b.value != null && b.value !== target[f]) {
         b.el.setAttribute(MARK_ATTR, "");

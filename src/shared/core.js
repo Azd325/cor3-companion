@@ -60,6 +60,26 @@
     },
 
     // ---------- small helpers ----------
+    // Puts markup the helpers build (game values already passed through esc)
+    // into el, without innerHTML: parsed by DOMParser (which never runs
+    // scripts), with scripts, embeds, on* handlers and javascript: links taken
+    // out. Skips the work when el already shows this markup. Returns true if it
+    // changed el.
+    setHTML(el, html) {
+      if (el.__cor3Html === html) return false;
+      const doc = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+      for (const bad of doc.body.querySelectorAll("script,iframe,object,embed,frame,link,meta,base")) bad.remove();
+      for (const node of doc.body.querySelectorAll("*")) {
+        for (const a of [...node.attributes]) {
+          if (/^on/i.test(a.name) || (/^(href|src|action|formaction|xlink:href)$/i.test(a.name) && /^\s*javascript:/i.test(a.value))) {
+            node.removeAttribute(a.name);
+          }
+        }
+      }
+      el.replaceChildren(...doc.body.childNodes);
+      el.__cor3Html = html;
+      return true;
+    },
     esc: (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])),
 
     // Game times arrive as Date (msgpack) or ISO strings (JSON / localStorage).
