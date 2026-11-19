@@ -10,6 +10,8 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+## 1.2.8 (2026-11-19)
+
 ### New
 
 - **Daily ops helper (Alt+D)** for both daily ops puzzles.
