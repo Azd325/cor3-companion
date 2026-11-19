@@ -5,8 +5,7 @@
 // the latest release and, only if it is newer than this copy, gets one small
 // line under the header. No permissions, no background work, no badge.
 //
-// Unpacked Chrome copies can't update, so they get the note right away, with a
-// link to the Chrome Web Store version. Firefox updates itself (from
+// Unpacked Chrome copies can't update, so they get the note right away. Firefox updates itself (from
 // addons.mozilla.org, or older GitHub installs from the release's updates.json),
 // so it only gets the note if a release is still not installed 3 days later,
 // which leaves time for Mozilla's review.
@@ -16,7 +15,6 @@
   if (api.runtime.getManifest().update_url) return;
 
   const LATEST = "https://api.github.com/repos/nvanderwaal/cor3-companion/releases/latest";
-  const CHROME_STORE = "https://chromewebstore.google.com/detail/CHROME_EXTENSION_ID";
   const KEY = "cor3UpdateCheck";
   const EVERY = 6 * 60 * 60 * 1000;
   const FIREFOX_GRACE = 3 * 24 * 60 * 60 * 1000;
@@ -72,17 +70,9 @@
     a.rel = "noopener";
     a.textContent = info.tag + " is out";
     Object.assign(a.style, { color: "#5df0a0", fontWeight: "700" });
-    if (isFirefox) {
-      bar.append(a, " · about:addons > gear > Check for Updates");
-    } else {
-      const store = document.createElement("a");
-      store.href = CHROME_STORE;
-      store.target = "_blank";
-      store.rel = "noopener";
-      store.textContent = "Chrome Web Store";
-      Object.assign(store.style, { color: "#5df0a0" });
-      bar.append(a, " · get it from the ", store, " to update by itself");
-    }
+    bar.append(a, isFirefox
+      ? " · about:addons > gear > Check for Updates"
+      : " · unzip it over your folder, then reload");
     header.after(bar);
   }
 

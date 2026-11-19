@@ -129,9 +129,9 @@ jobs:
 
           ### Install or update
 
-          Get it from [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/AMO_SLUG/) or the
-          [Chrome Web Store](https://chromewebstore.google.com/detail/CHROME_EXTENSION_ID); both update by themselves.
-          Store updates can take a day or two to arrive while the store reviews them.
+          **Firefox:** click `cor3-companion-firefox.xpi` to install (it updates itself after that).
+          **Chrome:** unzip `cor3-companion-chrome.zip` over your extension folder and click reload in `chrome://extensions`.
+          Copies from the Chrome Web Store or Firefox Add-ons update by themselves, once the store has reviewed the version.
 
           Every version's changes: [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
 

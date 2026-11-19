@@ -4,8 +4,8 @@
 the route to every server, tells you which upgrade is worth buying, and shows the real odds on expeditions.
 All of it right inside the game.
 
-[![Get it for Firefox](https://img.shields.io/badge/Firefox-Get%20the%20add--on-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://addons.mozilla.org/firefox/addon/AMO_SLUG/)
-[![Get it for Chrome](https://img.shields.io/badge/Chrome-Add%20to%20Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/CHROME_EXTENSION_ID)
+[![Install for Firefox](https://img.shields.io/badge/Firefox-Install-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](#firefox)
+[![Install for Chrome](https://img.shields.io/badge/Chrome%2C%20Edge%2C%20Brave-Install-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](#chrome-edge-brave)
 [![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/nvanderwaal)
 
 Free, no account, no tracking. Works in Firefox, Chrome, Edge and Brave.
@@ -31,14 +31,33 @@ Every helper can be switched on or off with its key, from the extension's icon i
 
 ## Install
 
-1. Get it from **[Firefox Add-ons](https://addons.mozilla.org/firefox/addon/AMO_SLUG/)** or the
-   **[Chrome Web Store](https://chromewebstore.google.com/detail/CHROME_EXTENSION_ID)** (also for Edge and Brave).
-2. Open or reload [cor3.gg](https://cor3.gg). That's it.
+COR3 Companion is on its way to the Chrome Web Store and Firefox Add-ons. Until it's there, install it from
+the [latest release](https://github.com/nvanderwaal/cor3-companion/releases/latest) in a minute:
 
-It updates by itself. A new version can take a day or two to arrive while the store reviews it.
+### Firefox
+
+1. Click [`cor3-companion-firefox.xpi`](https://github.com/nvanderwaal/cor3-companion/releases/latest/download/cor3-companion-firefox.xpi).
+2. Firefox asks to install the add-on: click **Continue to Installation**, then **Add**.
+
+It's signed by Mozilla and **updates itself**, also to the Firefox Add-ons version once that's out.
+
+### Chrome, Edge, Brave
+
+The Chrome Web Store version is in review. Until it's out:
+
+1. Download [`cor3-companion-chrome.zip`](https://github.com/nvanderwaal/cor3-companion/releases/latest/download/cor3-companion-chrome.zip) and unzip it into a folder
+   you keep, e.g. `Documents\cor3-companion`. Chrome loads the extension from there, so don't delete it.
+2. Open `chrome://extensions` (Edge: `edge://extensions`) and turn on **Developer mode** (top right).
+3. Click **Load unpacked** and pick that folder.
+
+This copy can't update itself: for a new version, unzip the new zip over the same folder and click the reload icon
+on the extension's card. The toolbar menu tells you when there is one. Once the store version is out, switch to it
+and you'll get updates automatically.
+
+Then open or reload [cor3.gg](https://cor3.gg). Nothing showing up? Click the puzzle-piece icon in your browser's
+toolbar and allow COR3 Companion on cor3.gg.
+
 See what's new in [CHANGELOG.md](CHANGELOG.md).
-
-Nothing showing up? Click the puzzle-piece icon in your browser's toolbar and allow COR3 Companion on cor3.gg.
 
 ## Job tracker
 
@@ -128,7 +147,7 @@ Off until you switch it on.
 
 ## Questions
 
-**Installed it from GitHub before?**
+**Switching to the store version later?**
 On Chrome, add it from the Chrome Web Store, then remove the old copy in `chrome://extensions` and delete its
 folder. Your settings stay. On Firefox there's nothing to do: it moves to the store version by itself.
 
