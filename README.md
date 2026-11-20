@@ -31,10 +31,15 @@ Every helper can be switched on or off with its key, from the extension's icon i
 
 ## Install
 
-COR3 Companion is on its way to the Chrome Web Store and Firefox Add-ons. Until it's there, install it from
-the [latest release](https://github.com/nvanderwaal/cor3-companion/releases/latest) in a minute:
+### Chrome, Edge, Brave
+
+Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/cor3-companion/klgheffipeaecholkjggmklgbmbnbfbi):
+click **Add to Chrome**, then **Add extension**. It **updates itself**. Edge users: allow extensions from other
+stores when Edge asks.
 
 ### Firefox
+
+COR3 Companion is on its way to Firefox Add-ons. Until it's there:
 
 1. On the [releases page](https://github.com/nvanderwaal/cor3-companion/releases), click
    `cor3-companion-firefox.xpi` in the newest release that has it. A new release gets it once Mozilla has
@@ -43,9 +48,9 @@ the [latest release](https://github.com/nvanderwaal/cor3-companion/releases/late
 
 It's signed by Mozilla and **updates itself**, also to the Firefox Add-ons version once that's out.
 
-### Chrome, Edge, Brave
+### Manual install on Chrome (no store)
 
-The Chrome Web Store version is in review. Until it's out:
+If you'd rather not use the store:
 
 1. Download [`cor3-companion-chrome.zip`](https://github.com/nvanderwaal/cor3-companion/releases/latest/download/cor3-companion-chrome.zip) and unzip it into a folder
    you keep, e.g. `Documents\cor3-companion`. Chrome loads the extension from there, so don't delete it.
@@ -53,8 +58,7 @@ The Chrome Web Store version is in review. Until it's out:
 3. Click **Load unpacked** and pick that folder.
 
 This copy can't update itself: for a new version, unzip the new zip over the same folder and click the reload icon
-on the extension's card. The toolbar menu tells you when there is one. Once the store version is out, switch to it
-and you'll get updates automatically.
+on the extension's card. The toolbar menu tells you when there is one.
 
 Then open or reload [cor3.gg](https://cor3.gg). Nothing showing up? Click the puzzle-piece icon in your browser's
 toolbar and allow COR3 Companion on cor3.gg.
@@ -156,9 +160,10 @@ Off until you switch it on.
 
 ## Questions
 
-**Switching to the store version later?**
-On Chrome, add it from the Chrome Web Store, then remove the old copy in `chrome://extensions` and delete its
-folder. Your settings stay. On Firefox there's nothing to do: it moves to the store version by itself.
+**Installed the unzipped Chrome copy earlier?** Add COR3 Companion from the
+[Chrome Web Store](https://chromewebstore.google.com/detail/cor3-companion/klgheffipeaecholkjggmklgbmbnbfbi), then
+remove the old copy in `chrome://extensions` and delete its folder, so you get updates automatically. On Firefox
+there's nothing to do: it moves to the store version by itself. Your settings stay either way.
 
 **A helper shows ⚠?** The game changed the data that helper reads, so it may show wrong or no info until
 COR3 Companion is updated. You'll see it on **Helpers ▾** in the top bar and in the toolbar menu. The other
