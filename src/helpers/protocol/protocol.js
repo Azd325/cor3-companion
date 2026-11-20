@@ -101,7 +101,7 @@
   // "Input: v1.0 GET LTE AES" / "Result:" / "Mismatched 2".
   function readLog(log) {
     // Only innermost divs, so a wrapper's text never counts an attempt twice.
-    const lines = [...log.querySelectorAll("div")].filter((d) => !d.querySelector("div"))
+    const lines = [...log.querySelectorAll("div")].filter((d) => !d.querySelector("div") && !d.closest(`.${NOTE_CLASS}`))
       .map((d) => d.textContent.trim()).filter(Boolean);
     const fields = [], history = [];
     let limit = null;
@@ -136,16 +136,21 @@
     for (const el of document.querySelectorAll(`[${MARK_ATTR}]`)) { el.style.outline = ""; el.style.outlineOffset = ""; el.removeAttribute(MARK_ATTR); }
   }
 
+  // The note sits at the end of the log, pinned to the bottom of its view.
+  // It must not take room in the window itself: the window has a fixed
+  // height, so a note above the field buttons pushed them out of view.
   function noteIn(win) {
+    const log = logOf(win);
     let note = win.querySelector(`.${NOTE_CLASS}`);
     if (!note) {
       note = document.createElement("div");
       note.className = NOTE_CLASS;
-      note.style.cssText = "font:inherit;font-size:12px;letter-spacing:.04em;padding:6px 10px;margin:6px 0;" +
-        `border:1px solid ${color.CYAN}55;color:${color.TEXT};background:rgba(0,0,0,.35);pointer-events:none`;
-      const cells = q(win, "ParameterCells");
-      (cells && cells.parentElement ? cells.parentElement : win).insertBefore(note, cells || null);
+      note.style.cssText = "position:sticky;bottom:0;z-index:1;font:inherit;font-size:12px;letter-spacing:.04em;" +
+        `padding:6px 10px;margin-top:6px;border:1px solid ${color.CYAN}55;color:${color.TEXT};` +
+        "background:rgba(0,0,0,.85);pointer-events:none";
     }
+    // New log lines land after it, so move it back to the end when needed.
+    if (log && log.lastElementChild !== note) log.appendChild(note);
     return note;
   }
 
@@ -156,7 +161,8 @@
     const log = logOf(win);
     if (!log) return;
     const buttons = fieldButtons(win);
-    const text = log.textContent;
+    const own = log.querySelector(`.${NOTE_CLASS}`);
+    const text = own ? log.textContent.replace(own.textContent, "") : log.textContent;
     const key = text + "|" + buttons.map((b) => b.value).join(" ");
     if (key === lastKey) return;
     lastKey = key;

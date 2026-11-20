@@ -26,6 +26,9 @@ and uses it as the release notes. Leave out headings that have nothing under the
 - **The top bar's expedition button opens Expeditions again.** Clicking "Decision" or "Expedition back" now finds
   the game's Expeditions tab (an icon with no label) and opens it.
 
+- **Protocol solver no longer hides the field buttons.** Its hint now sits at the bottom of the minigame's log
+  instead of pushing the Version, Method, Channel and Cipher buttons half out of the window (seen on Firefox).
+
 ## 1.3.0 (2026-11-19)
 
 ### New
