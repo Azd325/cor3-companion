@@ -10,6 +10,8 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+## 1.3.1 (2026-11-20)
+
 ### New
 
 - **On the Chrome Web Store.** Install COR3 Companion on Chrome, Edge or Brave from the
