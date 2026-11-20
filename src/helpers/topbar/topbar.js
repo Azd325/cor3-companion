@@ -188,10 +188,30 @@
 
   // Decision click: bring up the game's own expedition window. If its choice
   // buttons are already on screen, scroll to them and flash them; otherwise
-  // click the game's Expeditions button (found by its text, since the game
-  // gives it no stable id). Opening a window only changes what you see.
+  // click the game's Expeditions tab. That tab is an icon with no text, so we
+  // find it by its data-component-name ("TabBarItem-EXPEDITIONS"). It sits in a
+  // drag-to-reorder tab bar, so we send the full press (pointer and mouse down,
+  // up, then click) rather than a bare click(). Opening a tab only changes
+  // what you see.
   const mine = (el) => el.closest("#cor3-topbar-host, #cor3-job-tracker-host");
   const visible = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  function press(el) {
+    const r = el.getBoundingClientRect();
+    const at = { bubbles: true, cancelable: true, composed: true, view: window, button: 0,
+      clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 };
+    const P = window.PointerEvent || MouseEvent;
+    el.dispatchEvent(new P("pointerdown", { ...at, buttons: 1, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+    el.dispatchEvent(new MouseEvent("mousedown", { ...at, buttons: 1 }));
+    el.dispatchEvent(new P("pointerup", { ...at, buttons: 0, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+    el.dispatchEvent(new MouseEvent("mouseup", { ...at, buttons: 0 }));
+    el.dispatchEvent(new MouseEvent("click", { ...at, buttons: 0 }));
+  }
+  function gameTab(name) {
+    const tab = [...document.querySelectorAll(
+      `[data-component-name="TabBarItem-${name}"], [data-onboarding-300-id="TabBarItem-${name}"]`)]
+      .find((el) => !mine(el) && visible(el));
+    return tab || null;
+  }
   function openExpeditions() {
     const opts = document.querySelector('[data-component-name="ExpeditionsEventButtons"]');
     if (opts && visible(opts)) {
@@ -199,15 +219,19 @@
       opts.animate([{ outline: "2px solid #ffa040" }, { outline: "2px solid transparent" }], { duration: 1200 });
       return true;
     }
-    const want = /^expeditions?$/i;
-    const hits = [...document.querySelectorAll('button, a, [role="button"], [data-component-name], [title], [aria-label], span, div')]
-      .filter((el) => !mine(el) && visible(el) &&
-        (want.test((el.textContent || "").trim()) || want.test(el.getAttribute("aria-label") || "") || want.test(el.getAttribute("title") || "")));
-    if (!hits.length) return false;
-    // The innermost match, then the nearest clickable thing around it.
-    const leaf = hits.find((el) => !hits.some((o) => o !== el && el.contains(o))) || hits[0];
-    const target = leaf.closest('button, a, [role="button"]') || leaf;
-    target.click();
+    let target = gameTab("EXPEDITIONS");
+    if (!target) {
+      // Fallback for older layouts: a visible button labelled "Expeditions".
+      const want = /^expeditions?$/i;
+      const hits = [...document.querySelectorAll('button, a, [role="button"], [aria-label], [title]')]
+        .filter((el) => !mine(el) && visible(el) &&
+          (want.test((el.textContent || "").trim()) || want.test(el.getAttribute("aria-label") || "") || want.test(el.getAttribute("title") || "")));
+      const leaf = hits.find((el) => !hits.some((o) => o !== el && el.contains(o)));
+      target = leaf && (leaf.closest('button, a, [role="button"]') || leaf);
+    }
+    if (!target) return false;
+    // The inner item gets the press; it bubbles up to the sortable wrapper.
+    press(target);
     return true;
   }
 

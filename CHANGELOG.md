@@ -12,12 +12,19 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ### New
 
+- **On the Chrome Web Store.** Install COR3 Companion on Chrome, Edge or Brave from the
+  [Chrome Web Store](https://chromewebstore.google.com/detail/cor3-companion/klgheffipeaecholkjggmklgbmbnbfbi)
+  and it updates itself. Using the unzipped copy? Add the store version, then remove the old one; your settings stay.
+
 - **Checks your program strength on jobs.** Jobs that ask you to decrypt a file show whether one of your installed
   programs can open that file type and, once you've analysed the file, whether your DECRYPT power is strong
   enough. HACK now only counts programs that work on that server's type. Market job cards get a ✗ with the reason
   when either falls short.
 
 ### Fixed
+
+- **The top bar's expedition button opens Expeditions again.** Clicking "Decision" or "Expedition back" now finds
+  the game's Expeditions tab (an icon with no label) and opens it.
 
 - **Protocol solver no longer hides the field buttons.** Its hint now sits at the bottom of the minigame's log
   instead of pushing the Version, Method, Channel and Cipher buttons half out of the window (seen on Firefox).
