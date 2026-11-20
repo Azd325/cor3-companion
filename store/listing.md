@@ -3,8 +3,7 @@
 What to fill in on the Chrome Web Store dashboard and on addons.mozilla.org (AMO).
 
 Chrome Web Store item ID: `klgheffipeaecholkjggmklgbmbnbfbi`
-(store page once published: https://chromewebstore.google.com/detail/klgheffipeaecholkjggmklgbmbnbfbi).
-When it's live, point the README's Chrome install at it.
+Store page (live since 2026-11-20): https://chromewebstore.google.com/detail/cor3-companion/klgheffipeaecholkjggmklgbmbnbfbi
 
 - **Description** (both stores): [`description.txt`](description.txt). AMO gets it automatically with every
   release, together with [`amo-metadata.json`](amo-metadata.json) (summary, category, homepage, license).
