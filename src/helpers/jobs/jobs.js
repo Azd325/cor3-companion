@@ -898,7 +898,7 @@
 
   function clearMarks(keep) {
     for (const el of document.querySelectorAll("[data-cor3-jt]")) if (!keep.has(el)) {
-      el.removeAttribute("data-cor3-jt"); el.removeAttribute("data-cor3-jt-tag");
+      el.removeAttribute("data-cor3-jt"); el.removeAttribute("data-cor3-jt-tag"); el.removeAttribute("data-cor3-jt-key");
       if (el.dataset.cor3JtTitle != null) { el.title = el.dataset.cor3JtTitle; delete el.dataset.cor3JtTitle; }
     }
   }
@@ -944,6 +944,7 @@
             marked.add(row);
             if (row.getAttribute("data-cor3-jt") !== act) row.setAttribute("data-cor3-jt", act);
             if (row.getAttribute("data-cor3-jt-tag") !== tag) row.setAttribute("data-cor3-jt-tag", tag);
+            if (row.getAttribute("data-cor3-jt-key") !== key) row.setAttribute("data-cor3-jt-key", key);
             if (row.dataset.cor3JtTitle == null) row.dataset.cor3JtTitle = row.title || "";
             if (row.title !== tip) row.title = tip;
           }
@@ -956,6 +957,19 @@
     showHint(term, adds);
     if (changed) { save(); render(); window.__cor3.emit("jobs"); }
   }
+
+  // A download leaves the server's list as it was, so a download step ticks
+  // when you click the download button on its outlined row. We only watch
+  // the click; the game handles it as usual.
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest && e.target.closest("button");
+    const row = btn && btn.closest('[data-cor3-jt="download"]');
+    if (!row) return;
+    const isDownload = btn.querySelector('[data-sentry-component="DownloadIcon"]') ||
+      btn === row.querySelector("button");
+    const key = row.getAttribute("data-cor3-jt-key");
+    if (isDownload && key && tick(key)) { save(); render(); window.__cor3.emit("jobs"); setTimeout(markTerminal, 50); }
+  }, true);
 
   // "Job: add 203.0.113.45 [copy]" under the terminal's tabs.
   function showHint(term, adds) {
