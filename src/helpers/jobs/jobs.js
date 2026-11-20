@@ -781,7 +781,7 @@
     [data-cor3-jt="delete"] { outline: 2px solid #ff5a4f !important; outline-offset: -2px; background-color: rgba(255,90,79,.07) !important; }
     [data-cor3-jt="download"] { outline: 2px solid #4fd1e8 !important; outline-offset: -2px; background-color: rgba(79,209,232,.07) !important; }
     [data-cor3-jt="job"] { outline: 2px solid #ffc800 !important; outline-offset: -2px; background-color: rgba(255,200,0,.06) !important; }
-    [data-cor3-jt]::before { content: attr(data-cor3-jt-tag); position: absolute; left: -1px; top: -8px; z-index: 2;
+    [data-cor3-jt]::before { content: attr(data-cor3-jt-tag); position: absolute; left: 4px; top: 1px; z-index: 2;
       font: 700 9px/13px ui-monospace, Consolas, monospace; letter-spacing: .05em; padding: 0 5px; border-radius: 2px; pointer-events: none; }
     [data-cor3-jt="delete"]::before { background: #ff5a4f; color: #1a0b0a; }
     [data-cor3-jt="download"]::before { background: #4fd1e8; color: #06171b; }
@@ -853,14 +853,16 @@
   }
 
   // The list row around a text element: the first ancestor that has
-  // look-alike siblings (same tag and class), i.e. one row of a table.
+  // look-alike siblings (same tag and class) and the row's buttons, i.e. one
+  // row of the list, not the name cell next to the type and size cells.
   function rowOf(el, root) {
     let cur = el;
     for (let i = 0; cur && cur !== root && i < 8; i++, cur = cur.parentElement) {
       const p = cur.parentElement;
       if (!p) break;
       const same = [...p.children].filter((c) => c.tagName === cur.tagName && c.className === cur.className);
-      if (same.length >= 2 && cur.querySelector("button, svg, [role=button]")) return cur;
+      // A row holds its action buttons; a cell next to other cells doesn't.
+      if (same.length >= 2 && cur.querySelector("button, [role=button]")) return cur;
     }
     return null;
   }
