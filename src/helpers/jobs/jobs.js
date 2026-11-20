@@ -20,11 +20,12 @@
 
   // ---------- state ----------
   const STORE_KEY = "cor3-job-tracker";
-  const state = load(STORE_KEY, { jobs: {}, servers: {}, checks: {}, panel: { x: 20, y: 80, open: true, min: false } });
+  const state = load(STORE_KEY, { jobs: {}, servers: {}, checks: {}, auto: {}, panel: { x: 20, y: 80, open: true, min: false } });
   // Raw copies of the last job lists, for checking in the console (window.__cor3JobTracker).
   const debug = { lastJobs: null, lastRecentJobs: null };
   // The market's current offers by id, for checking each job card.
   const offers = new Map();
+  if (!state.auto) state.auto = {};
   window.__cor3JobTracker = { debug, state };
   // Kept in localStorage, so the panel and the top bar show your jobs as soon
   // as the game opens again; the game's next job list replaces them.
@@ -54,6 +55,7 @@
       const job = state.jobs[id];
       if (action === "job.can-complete" && job) {
         job.canComplete = d.canComplete ?? true;
+        if (job.canComplete) tickAll(job);
         changed = true;
       } else if (action === "job.completed" && job) {
         job.status = "COMPLETED";
@@ -174,6 +176,11 @@
     .job { border: 1px solid #22363f; border-radius: 4px; padding: 6px; margin-bottom: 6px; }
     .job.ready { border-color: #2fae6a; }
     .job.done { opacity: .5; }
+    .prog { height: 3px; background: #1d3640; border-radius: 2px; margin: 4px 0 2px; }
+    .prog i { display: block; height: 100%; background: #ffc800; border-radius: 2px; }
+    .ready .prog i { background: #2fae6a; }
+    .auto { flex: none; font-size: 9px; color: #5df0a0; }
+    label.chk span.auto { text-decoration: none; opacity: 1; }
     .t { display: flex; gap: 6px; align-items: baseline; }
     .t .n { flex: 1; font-weight: 700; color: #e6f6fa; }
     .badge { font-size: 10px; padding: 0 4px; border-radius: 3px; background: #1d3640; color: #76c1d1; }
@@ -241,7 +248,7 @@
         const act = btn.dataset.act;
         if (act === "min") state.panel.min = !state.panel.min;
         if (act === "close") state.panel.open = false;
-        if (act === "clear") { state.jobs = {}; state.checks = {}; }
+        if (act === "clear") { state.jobs = {}; state.checks = {}; state.auto = {}; }
         save(); render();
       }
     });
@@ -249,7 +256,8 @@
       const cb = e.target.closest("input[data-key]");
       if (!cb) return;
       state.checks[cb.dataset.key] = cb.checked;
-      save(); render();
+      delete state.auto[cb.dataset.key];
+      save(); render(); markTerminal();
     });
     return true;
   }
@@ -283,7 +291,8 @@
     for (const item of job.conditions?.items || []) {
       const d = item?.details || {};
       const kind = item.type || item.action || item.kind || item.conditionType || "";
-      const push = (key, text, what) => out.push({ key, text, kind, what });
+      const done = item.isCompleted ?? item.completed ?? item.isDone ?? item.done ?? (item.status ? /complete|done/i.test(item.status) : undefined);
+      const push = (key, text, what) => out.push({ key, text, kind, what, done: done === true });
       if (d.ips?.length) d.ips.forEach((ip) => push(ip, ip, "ip"));
       else if (d.fileNames?.length) d.fileNames.forEach((f) => push(f, f, "file"));
       else if (d.logNames?.length) d.logNames.forEach((l) => push(l, l, "log"));
@@ -589,8 +598,11 @@
         const servers = j.relatedServers || [];
         html += `<div class="job ${j.canComplete ? "ready" : ""} ${done ? "done" : ""}">
           <div class="t"><span class="n">${esc(j.name || j.id)}</span>
-            ${j.canComplete ? `<span class="badge ok">READY</span>` : `<span class="badge">${esc(j.status)}</span>`}</div>`;
+            ${j.canComplete ? `<span class="badge ok">READY</span>`
+              : !done && items.length ? `<span class="badge">${doneCount(j, items)}/${items.length} done</span>`
+              : `<span class="badge">${esc(j.status)}</span>`}</div>`;
         if (!done && j.endTime) html += `<div class="time" data-end="${esc(j.endTime)}"></div>`;
+        if (!done && items.length) html += `<div class="prog"><i style="width:${j.canComplete ? 100 : Math.round(100 * doneCount(j, items) / items.length)}%"></i></div>`;
         if (j.features?.[0]) html += `<div class="desc">${esc(j.features[0])}</div>`;
         if (items.length) {
           html += `<div class="sec">To do</div>`;
@@ -603,7 +615,7 @@
             const c = f && decryptCheck(f);
             const badge = c ? `<span class="badge ${c.ok === false ? "bad" : c.ok && f.need != null ? "ok" : ""}" title="${esc(c.tip)}">${c.text}</span>` : "";
             html += `<label class="${chk ? "chk" : ""}"><input type="checkbox" data-key="${esc(key)}" ${chk ? "checked" : ""}>
-              <span>${it.kind ? esc(it.kind) + " " : ""}${esc(it.what)}: ${esc(it.text)}</span>${badge}${it.what === "ip" && it.text ? `<button class="cp" data-copy="${esc(it.text)}" title="Copy IP">copy</button>` : ""}</label>`;
+              <span>${it.kind ? esc(it.kind) + " " : ""}${esc(it.what)}: ${esc(it.text)}</span>${chk && state.auto[key] ? `<span class="auto" title="Ticked by the tracker when the game showed this step done">\u2713 auto</span>` : ""}${badge}${it.what === "ip" && it.text ? `<button class="cp" data-copy="${esc(it.text)}" title="Copy IP">copy</button>` : ""}</label>`;
           }
         }
         if (servers.length) {
@@ -756,11 +768,231 @@
     }
   }
 
+  // ---------- job steps inside a server's terminal ----------
+  // The server terminal (SAI Terminal) lists a server's blacklisted IPs
+  // (Transit Access), files and logs. Rows a taken job needs get an outline
+  // (red: delete, blue: download, yellow: other), the full name on hover, and
+  // their tab a dot. Steps that add something (an IP, an upload) show as a
+  // hint by the tabs. A step ticks itself in the panel when its row goes away
+  // after a delete, or shows up after an add, while that list stays open.
+  const T_STYLE_ID = "cor3-jt-term-style";
+  const T_CSS = `
+    [data-cor3-jt] { position: relative !important; border-radius: 3px; }
+    [data-cor3-jt="delete"] { outline: 2px solid #ff5a4f !important; outline-offset: -2px; background-color: rgba(255,90,79,.07) !important; }
+    [data-cor3-jt="download"] { outline: 2px solid #4fd1e8 !important; outline-offset: -2px; background-color: rgba(79,209,232,.07) !important; }
+    [data-cor3-jt="job"] { outline: 2px solid #ffc800 !important; outline-offset: -2px; background-color: rgba(255,200,0,.06) !important; }
+    [data-cor3-jt]::before { content: attr(data-cor3-jt-tag); position: absolute; left: -1px; top: -8px; z-index: 2;
+      font: 700 9px/13px ui-monospace, Consolas, monospace; letter-spacing: .05em; padding: 0 5px; border-radius: 2px; pointer-events: none; }
+    [data-cor3-jt="delete"]::before { background: #ff5a4f; color: #1a0b0a; }
+    [data-cor3-jt="download"]::before { background: #4fd1e8; color: #06171b; }
+    [data-cor3-jt="job"]::before { background: #ffc800; color: #1a1400; }
+    [data-cor3-jt-dot] { position: relative !important; }
+    [data-cor3-jt-dot]::after { content: ""; position: absolute; top: 2px; right: 0; width: 7px; height: 7px; border-radius: 50%;
+      background: #ffc800; box-shadow: 0 0 6px #ffc800; pointer-events: none; }
+  `;
+  const TAB_FOR = { ip: /transit/i, file: /^files?$/i, log: /^logs?$/i };
+  const actionOf = (kind) => /delet|remov|eras|wipe|clear|purge/i.test(kind) ? "delete"
+    : /download|steal|copy|exfil/i.test(kind) ? "download"
+    : /add|upload|plant|place|insert|inject/i.test(kind) ? "add" : "job";
+  const norm = (t) => String(t || "").replace(/\s+/g, " ").trim();
+
+  function doneCount(job, items) {
+    return items.filter((it) => state.checks[`${job.id}|${it.key}`]).length;
+  }
+  function tick(key) {
+    if (state.checks[key]) return false;
+    state.checks[key] = true;
+    state.auto[key] = true;
+    return true;
+  }
+  function tickAll(job) {
+    for (const it of conditionItems(job)) tick(`${job.id}|${it.key}`);
+  }
+
+  // The open terminal: the window around the "LOGS" / "FILES" / "TRANSIT
+  // ACCESS" tab buttons.
+  const leafText = (el) => el.childElementCount === 0 ? norm(el.textContent) : null;
+  function findTerminal() {
+    // A native text search is far cheaper than walking every element.
+    const found = document.evaluate(
+      "//body//text()[translate(normalize-space(), 'logs', 'LOGS')='LOGS']",
+      document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+    let logsTab = null;
+    for (let i = 0; i < found.snapshotLength && !logsTab; i++) {
+      const el = found.snapshotItem(i).parentElement;
+      if (el && !el.closest('[id^="cor3-"]') && el.getClientRects().length) logsTab = el;
+    }
+    if (!logsTab) return null;
+    let tabBar = logsTab.parentElement;
+    for (let i = 0; tabBar && i < 4 && !/transit/i.test(tabBar.textContent); i++) tabBar = tabBar.parentElement;
+    if (!tabBar) return null;
+    let root = tabBar;
+    for (let i = 0; root && i < 8; i++, root = root.parentElement) {
+      if (root.querySelectorAll("button").length > 4 && root.textContent.length > tabBar.textContent.length + 40) break;
+    }
+    if (!root) return null;
+    const tabs = {};
+    for (const el of tabBar.querySelectorAll("*")) {
+      const t = leafText(el);
+      if (!t) continue;
+      for (const k in TAB_FOR) if (TAB_FOR[k].test(t)) tabs[k] = el.closest("button, [role=tab]") || el;
+    }
+    return { root, tabBar, tabs };
+  }
+
+  // Which job server this terminal is: the one whose name or IP shows in it
+  // outside the lists (the title next to the tabs).
+  function terminalServer(term) {
+    const head = norm(term.root.textContent.slice(0, 400));
+    for (const j of Object.values(state.jobs)) {
+      for (const rs of j.relatedServers || []) {
+        if ((rs.serverName && head.includes(rs.serverName)) || (rs.serverIp && head.includes(rs.serverIp))) return rs;
+      }
+    }
+    return null;
+  }
+
+  // The list row around a text element: the first ancestor that has
+  // look-alike siblings (same tag and class), i.e. one row of a table.
+  function rowOf(el, root) {
+    let cur = el;
+    for (let i = 0; cur && cur !== root && i < 8; i++, cur = cur.parentElement) {
+      const p = cur.parentElement;
+      if (!p) break;
+      const same = [...p.children].filter((c) => c.tagName === cur.tagName && c.className === cur.className);
+      if (same.length >= 2 && cur.querySelector("button, svg, [role=button]")) return cur;
+    }
+    return null;
+  }
+
+  // Text elements in the terminal whose text is exactly `text`.
+  function findText(root, text) {
+    const want = norm(text);
+    const out = [];
+    for (const el of root.querySelectorAll("*")) {
+      if (el.childElementCount || el.closest('[id^="cor3-"]')) continue;
+      if (norm(el.textContent) === want) out.push(el);
+    }
+    return out;
+  }
+
+  // The open tab: the one whose background differs from the other two.
+  function activeTab(term) {
+    const ks = Object.keys(term.tabs);
+    if (ks.length < 3) return null;
+    const bg = {};
+    for (const k of ks) {
+      const el = term.tabs[k];
+      bg[k] = getComputedStyle(el).backgroundColor + getComputedStyle(el.parentElement).backgroundColor;
+    }
+    const odd = ks.filter((k) => ks.filter((o) => bg[o] === bg[k]).length === 1);
+    return odd.length === 1 ? odd[0] : null;
+  }
+
+  // Steps seen in a terminal list: key -> { tab, seen }. A step only ticks
+  // while the same tab stays open: its row went away (delete) or showed up (add).
+  const seenRows = new Map();
+  let hintHost = null, hintBox = null, lastHint = "";
+
+  function clearMarks(keep) {
+    for (const el of document.querySelectorAll("[data-cor3-jt]")) if (!keep.has(el)) {
+      el.removeAttribute("data-cor3-jt"); el.removeAttribute("data-cor3-jt-tag");
+      if (el.dataset.cor3JtTitle != null) { el.title = el.dataset.cor3JtTitle; delete el.dataset.cor3JtTitle; }
+    }
+  }
+
+  function markTerminal() {
+    if (!document.body) return;
+    if (!document.getElementById(T_STYLE_ID)) {
+      const st = document.createElement("style");
+      st.id = T_STYLE_ID; st.textContent = T_CSS;
+      (document.head || document.documentElement).appendChild(st);
+    }
+    const term = Object.keys(state.jobs).length ? findTerminal() : null;
+    const marked = new Set(), dots = new Set(), adds = [];
+    let changed = false;
+    const rs = term && terminalServer(term);
+    if (!term || !rs) seenRows.clear();
+    if (term && rs) {
+      const tab = activeTab(term);
+      for (const job of Object.values(state.jobs)) {
+        if (job.status !== "TAKEN" || !(job.relatedServers || []).some((x) =>
+          (rs.serverIp && x.serverIp === rs.serverIp) || (rs.serverName && x.serverName === rs.serverName))) continue;
+        for (const it of conditionItems(job)) {
+          const key = `${job.id}|${it.key}`;
+          if (it.done && tick(key)) changed = true;
+          if (!it.text || !TAB_FOR[it.what]) continue;
+          const act = actionOf(it.kind);
+          const hits = tab === it.what
+            ? findText(term.root, it.text).map((el) => rowOf(el, term.root)).filter(Boolean) : [];
+          if (tab === it.what && !state.checks[key]) {
+            const prev = seenRows.get(key);
+            if (prev && prev.tab === tab) {
+              if (act === "delete" && prev.seen && !hits.length && tick(key)) changed = true;
+              if (act === "add" && !prev.seen && hits.length && tick(key)) changed = true;
+            }
+            seenRows.set(key, { tab, seen: hits.length > 0 });
+          } else seenRows.delete(key);
+          if (state.checks[key]) continue;
+          if (term.tabs[it.what]) dots.add(term.tabs[it.what]);
+          if (act === "add") { adds.push(it); continue; }
+          const tag = act === "delete" ? "JOB · DELETE" : act === "download" ? "JOB · DOWNLOAD" : "JOB";
+          const tip = `${it.text}\nJob "${job.name || job.id}": ${it.kind || act}`;
+          for (const row of hits) {
+            marked.add(row);
+            if (row.getAttribute("data-cor3-jt") !== act) row.setAttribute("data-cor3-jt", act);
+            if (row.getAttribute("data-cor3-jt-tag") !== tag) row.setAttribute("data-cor3-jt-tag", tag);
+            if (row.dataset.cor3JtTitle == null) row.dataset.cor3JtTitle = row.title || "";
+            if (row.title !== tip) row.title = tip;
+          }
+        }
+      }
+    }
+    clearMarks(marked);
+    for (const el of document.querySelectorAll("[data-cor3-jt-dot]")) if (!dots.has(el)) el.removeAttribute("data-cor3-jt-dot");
+    for (const el of dots) if (!el.hasAttribute("data-cor3-jt-dot")) el.setAttribute("data-cor3-jt-dot", "");
+    showHint(term, adds);
+    if (changed) { save(); render(); window.__cor3.emit("jobs"); }
+  }
+
+  // "Job: add 203.0.113.45 [copy]" under the terminal's tabs.
+  function showHint(term, adds) {
+    const html = term && adds.length ? adds.map((it) =>
+      `<div>Job: ${it.what === "ip" ? "add" : "upload"} <b>${esc(it.text)}</b>${it.what === "ip" ? ` <button data-copy="${esc(it.text)}">copy</button>` : ""}</div>`).join("") : "";
+    if (!html) { if (hintHost) hintHost.style.display = "none"; lastHint = ""; return; }
+    if (!hintHost || !document.documentElement.contains(hintHost)) {
+      const made = shadowHost("cor3-jt-term-hint", `
+        :host { all: initial; }
+        .h { position: fixed; z-index: 2147483645; background: #081016; border: 1px dashed #ffc800; border-radius: 4px;
+             padding: 3px 8px; color: #ffe48a; font: 11px/1.6 ui-monospace, Consolas, monospace; }
+        b { color: #fff3c4; }
+        button { all: unset; font-size: 10px; padding: 0 5px; border-radius: 3px; background: #1d3640; color: #76c1d1; cursor: pointer; }
+        button:hover { background: #2d4a55; color: #e6f6fa; }`);
+      hintHost = made.host;
+      hintBox = document.createElement("div");
+      hintBox.className = "h";
+      made.root.appendChild(hintBox);
+      document.body.appendChild(hintHost);
+      hintBox.addEventListener("click", async (e) => {
+        const b = e.target.closest("button[data-copy]");
+        if (!b) return;
+        if (await copyText(b.dataset.copy)) { b.textContent = "copied"; setTimeout(() => { b.textContent = "copy"; }, 1200); }
+      });
+      lastHint = "";
+    }
+    hintHost.style.display = "";
+    if (html !== lastHint) { setHTML(hintBox, html); lastHint = html; }
+    const r = term.tabBar.getBoundingClientRect();
+    hintBox.style.top = `${Math.round(r.bottom + 6)}px`;
+    hintBox.style.right = `${Math.max(8, Math.round(window.innerWidth - r.right))}px`;
+  }
+
   // Countdowns tick once a second; card marks follow the game's page.
   window.__cor3.every(1000, () => {
     if (state.panel.open && !state.panel.min && Object.keys(state.jobs).length) render();
   }, "job tracker");
   window.__cor3.onDom(annotateJobCards, 250);
+  window.__cor3.onDom(markTerminal, 300);
   document.addEventListener("DOMContentLoaded", render);
   if (document.readyState !== "loading") render();
 })();

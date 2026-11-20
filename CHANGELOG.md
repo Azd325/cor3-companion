@@ -21,6 +21,11 @@ and uses it as the release notes. Leave out headings that have nothing under the
   enough. HACK now only counts programs that work on that server's type. Market job cards get a ✗ with the reason
   when either falls short.
 
+- **Job steps marked in the server terminal.** In a server's Transit Access, Files and Logs tabs, the IPs, files and
+  log lines your jobs need get an outline (red to delete, blue to download) with the full name on hover, and the
+  tab gets a dot. IPs to add show next to the tabs with a copy button. The job tracker ticks a step off by itself
+  when you do it, shows how many steps are done, and turns green with READY when you can hand the job in.
+
 ### Fixed
 
 - **The top bar's expedition button opens Expeditions again.** Clicking "Decision" or "Expedition back" now finds
