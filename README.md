@@ -79,6 +79,18 @@ A small panel you can drag anywhere, minimise or hide. For every job you've take
 - **Your DECRYPT power** next to every file you have to decrypt, from programs that can open that file type
   (**DECRYPT 18.4/25 ✗**). The power a file needs shows once you've analysed it in the game.
 
+In a server's terminal, the IPs, files and log lines your jobs need get an outline (red to delete, blue to
+download) with the full name on hover, and their tab gets a dot. IPs to add show next to the tabs with a **copy**
+button. Do a step and the tracker ticks it off for you and shows **2/3 done**:
+
+- **Delete** ticks once the row is gone from the list. A misclick or a failed delete doesn't count.
+- **Add or upload** ticks once the new row shows up in the list.
+- **Download** ticks when you click the download button on an outlined row, since a download doesn't change the
+  list. If the game refuses the download, untick it by hand.
+
+Ticks marked **✓ auto** were done by the tracker; you can still tick or untick any step yourself. The job turns
+green with **READY** once the game says you can hand it in.
+
 On the market, every job card gets a green ✓ when you can do the job now or a red ✗ with the reason, such as a
 server your HACK can't beat or a file no installed program can decrypt.
 
