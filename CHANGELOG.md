@@ -21,6 +21,11 @@ and uses it as the release notes. Leave out headings that have nothing under the
   enough. HACK now only counts programs that work on that server's type. Market job cards get a ✗ with the reason
   when either falls short.
 
+### Fixed
+
+- **The top bar's expedition button opens Expeditions again.** Clicking "Decision" or "Expedition back" now finds
+  the game's Expeditions tab (an icon with no label) and opens it.
+
 ## 1.3.0 (2026-11-19)
 
 ### New
