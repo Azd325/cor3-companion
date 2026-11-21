@@ -130,11 +130,10 @@
     const keep = Math.max(0, Math.min(q, left));
     const { GREEN, GREY } = window.__cor3.color;
     const n = p.need - left + keep; // this one's place in the count
-    const sum = keep === q ? `Drone part ${n} of ${p.need}: keep it.`
-      : keep > 0 ? `Keep ${keep} for the drone (up to ${n} of ${p.need}), the other ${q - keep} ${spareWord === "sell" ? "can be sold" : "are spare"}.`
-      : spareWord === "sell" ? `Spare: you have all ${p.need} for the drone, so this can be sold.` : `Spare: you already have all ${p.need} for the drone.`;
-    const title = `${sum}\nDrone ${drone.detail(p)} (each stage takes one of its options, or credits instead).\n` +
-      `You have ${have} in your stash.`;
+    const sum = keep === q ? `This is ${n} of ${p.need}: keep it.`
+      : keep > 0 ? `Keep ${keep} (up to ${n} of ${p.need}), the other ${q - keep} ${spareWord === "sell" ? "can be sold" : "are spare"}.`
+      : spareWord === "sell" ? `You have all ${p.need}, so this one can be sold.` : `You already have all ${p.need}.`;
+    const title = `Drone: ${drone.detail(p)}\n${sum}\nA stage can also be paid with another option or credits.`;
     if (keep === q) return { text: `${n}/${p.need}`, color: GREEN, title };
     if (keep > 0) return { text: `${n}/${p.need} +${q - keep}`, color: "#ffc966", title };
     return { text: spareWord === "sell" ? "SELL" : "SPARE", color: GREY, title };
