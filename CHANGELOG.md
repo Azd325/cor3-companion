@@ -10,6 +10,12 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+### New
+
+- **Drone parts marked in your stash and loot.** Items the personal drone's stages take get a **DRONE 08** tag
+  until you have enough; extra copies say **Spare · can sell**. Opening an expedition's container shows the same
+  tags on the loot, counted against what you already have. Hover a tag for the stages and counts.
+
 ## 1.3.1 (2026-11-20)
 
 ### New
