@@ -66,7 +66,6 @@
   window.__cor3Drone = {
     key,
     part: (name) => parts.get(key(name)) || null,
-    stages: (p) => p.uses.map((u) => pad(u.n)).join("·"),
     // "stage 08 Electronics x2, stage 09 Optical sensors x2"
     detail: (p) => p.uses.map((u) => `stage ${pad(u.n)} ${u.name} x${u.count}`).join(", "),
   };

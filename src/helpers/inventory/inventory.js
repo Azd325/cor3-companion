@@ -107,14 +107,14 @@
     }
     return have;
   }
-  // Tag in the tile's top-left corner, or none.
+  // Small tag just above the price (bottom right; the name sits on top), or none.
   function droneTag(el, mark) {
     let tag = el.querySelector(`:scope > .${DRONE_CLASS}`);
     if (!mark) { if (tag) tag.remove(); return; }
     if (!tag) {
       tag = document.createElement("div");
       tag.className = DRONE_CLASS;
-      tag.style.cssText = "position:absolute;left:2px;top:2px;z-index:2;padding:0 3px;border-radius:3px;" +
+      tag.style.cssText = "position:absolute;right:2px;bottom:17px;z-index:2;padding:0 3px;border-radius:3px;" +
         "background:rgba(8,16,22,.85);font:700 10px/14px ui-monospace,Consolas,monospace;white-space:nowrap;pointer-events:auto";
       if (getComputedStyle(el).position === "static") el.style.position = "relative";
       el.appendChild(tag);
@@ -128,11 +128,14 @@
   function droneMark(p, q, left, have, spareWord) {
     const keep = Math.max(0, Math.min(q, left));
     const { GREEN, GREY } = window.__cor3.color;
-    const title = `Drone parts: ${drone.detail(p)}. Each stage takes one of its options, or credits instead. ` +
+    const sum = keep === q ? `Keep ${q > 1 ? "all " + q : "it"} for the drone.`
+      : keep > 0 ? `Keep ${keep} for the drone, the other ${q - keep} ${spareWord === "sell" ? "can be sold" : "are spare"}.`
+      : spareWord === "sell" ? "Spare: you have enough for the drone, so this can be sold." : "Spare: you already have enough for the drone.";
+    const title = `${sum}\nDrone ${drone.detail(p)} (each stage takes one of its options, or credits instead).\n` +
       `You need up to ${p.need} and have ${have} in your stash.`;
-    if (keep === q) return { text: `DRONE ${drone.stages(p)}`, color: GREEN, title };
-    if (keep > 0) return { text: `DRONE keep ${keep} · ${spareWord} ${q - keep}`, color: "#ffc966", title };
-    return { text: spareWord === "sell" ? "Spare · can sell" : "Spare · have enough", color: GREY, title };
+    if (keep === q) return { text: "KEEP", color: GREEN, title };
+    if (keep > 0) return { text: `KEEP ${keep}`, color: "#ffc966", title };
+    return { text: spareWord === "sell" ? "SELL" : "SPARE", color: GREY, title };
   }
 
   function annotate() {

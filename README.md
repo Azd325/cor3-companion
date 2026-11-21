@@ -137,11 +137,11 @@ revealed the options shrink, until one turns green with **MATCH**: that's the an
 Every item gets its sell price in the corner (**12k cr**) and a border in its rarity colour. A line on top shows
 your stash's total value and the slots used. Hover a stack's price to see the whole stack's value.
 
-Items you can hand in for the personal drone (Expeditions > Personal drone assembling) get a tag in the top
-corner. **DRONE 08·09** means keep it, for those stages. Once you have enough, extra copies say
-**Spare · can sell**, and a stack that's partly needed says **DRONE keep 1 · sell 2**. The same tag shows on
-the loot when you open an expedition's container, counted against what's already in your stash. Hover a tag
-for the stages and how many you need. The list of parts comes from the community guide, since the game doesn't
+Items you can hand in for the personal drone (Expeditions > Personal drone assembling) get a small tag above the
+price. **KEEP** (green) means you still need it. **KEEP 2** (amber) on a stack means keep 2 and the rest can go,
+and **SELL** (grey) means you already have enough. The same tags show on the loot when you open an expedition's
+container, counted against what's already in your stash (**SPARE** there means you have enough). Hover a tag for
+the drone stages and how many you need. The list of parts comes from the community guide, since the game doesn't
 send it; every option of a stage counts, so you may need fewer if you pay credits or pick another option.
 
 ## Protocol solver
