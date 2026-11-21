@@ -12,8 +12,8 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ### New
 
-- **Drone parts marked in your stash and loot.** Items the personal drone's stages take get a green **KEEP** tag
-  until you have enough; extra copies say **SELL**. Opening an expedition's container shows the same
+- **Drone parts marked in your stash and loot.** Items the personal drone's stages take are counted on a tag
+  (**1/4** … **4/4**) until you have enough; extra copies say **SELL**. Opening an expedition's container shows the same
   tags on the loot, counted against what you already have. Hover a tag for the stages and counts.
 
 ## 1.3.1 (2026-11-20)

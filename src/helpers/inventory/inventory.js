@@ -123,18 +123,20 @@
     tag.style.color = mark.color;
     tag.title = mark.title;
   }
-  // The tag for q of a part when `left` more are still needed.
+  // The tag for q of a part when `left` more are still needed. Items don't
+  // stack in the game, so the tag counts them: 1/4, 2/4 ... 4/4, then SELL.
   // spareWord: "sell" in the stash, "spare" for loot not yet collected.
   function droneMark(p, q, left, have, spareWord) {
     const keep = Math.max(0, Math.min(q, left));
     const { GREEN, GREY } = window.__cor3.color;
-    const sum = keep === q ? `Keep ${q > 1 ? "all " + q : "it"} for the drone.`
-      : keep > 0 ? `Keep ${keep} for the drone, the other ${q - keep} ${spareWord === "sell" ? "can be sold" : "are spare"}.`
-      : spareWord === "sell" ? "Spare: you have enough for the drone, so this can be sold." : "Spare: you already have enough for the drone.";
+    const n = p.need - left + keep; // this one's place in the count
+    const sum = keep === q ? `Drone part ${n} of ${p.need}: keep it.`
+      : keep > 0 ? `Keep ${keep} for the drone (up to ${n} of ${p.need}), the other ${q - keep} ${spareWord === "sell" ? "can be sold" : "are spare"}.`
+      : spareWord === "sell" ? `Spare: you have all ${p.need} for the drone, so this can be sold.` : `Spare: you already have all ${p.need} for the drone.`;
     const title = `${sum}\nDrone ${drone.detail(p)} (each stage takes one of its options, or credits instead).\n` +
-      `You need up to ${p.need} and have ${have} in your stash.`;
-    if (keep === q) return { text: "KEEP", color: GREEN, title };
-    if (keep > 0) return { text: `KEEP ${keep}`, color: "#ffc966", title };
+      `You have ${have} in your stash.`;
+    if (keep === q) return { text: `${n}/${p.need}`, color: GREEN, title };
+    if (keep > 0) return { text: `${n}/${p.need} +${q - keep}`, color: "#ffc966", title };
     return { text: spareWord === "sell" ? "SELL" : "SPARE", color: GREY, title };
   }
 
