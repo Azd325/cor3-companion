@@ -1,7 +1,7 @@
 // COR3 expeditions helper.
-// - Makes the game's hover popup on decision options clear: next to "Risk" and
-//   "Rewards" it writes HIGHER / LOWER / SAME (or MORE / LESS) in the right colour
-//   (the game colours "risk up" green), and adds a one-line verdict.
+// - Makes the game's hover popup on decision options clear: under the game's
+//   own row it adds a line "Risk HIGHER · Rewards MORE" (or LOWER / LESS / SAME)
+//   in the right colour (the game colours "risk up" green), and a one-line verdict.
 // - With the expedition data the game sends (read through the websocket hook in
 //   shared/socket.js) it adds the exact numbers: Risk HIGHER +8, the mission risk after
 //   the choice, and the time left to decide.
@@ -18,8 +18,8 @@
 
   const AMBER = "#ffc966";
   const OPTIONS_SEL = '[data-component-name="ExpeditionsEventButtons"]';
-  const WORD_CLASS = "cor3-exp-word", VERDICT_CLASS = "cor3-exp-verdict";
-  const MINE = `.${WORD_CLASS}, .${VERDICT_CLASS}, .${SCORE_CLASS}, .cor3-exp-odds`;
+  const VERDICT_CLASS = "cor3-exp-verdict";
+  const MINE = `.${VERDICT_CLASS}, .${SCORE_CLASS}, .cor3-exp-odds`;
 
   const RISK_WORD = { up: ["HIGHER", RED], down: ["LOWER", GREEN], no_change: ["SAME", GREY] };
   const LOOT_WORD = { up: ["MORE", GREEN], down: ["LESS", RED], no_change: ["SAME", GREY] };
@@ -46,7 +46,13 @@
   window.__cor3.helper("expeditions", () => state.enabled, (on) => {
     state.enabled = on;
     save(STORE_KEY, state);
-    if (!on) for (const el of document.querySelectorAll(MINE)) el.remove();
+    if (!on) {
+      for (const el of document.querySelectorAll(MINE)) el.remove();
+      for (const el of document.querySelectorAll("[data-cor3-exp-popup]")) {
+        el.style.flexWrap = el.getAttribute("data-cor3-exp-popup");
+        el.removeAttribute("data-cor3-exp-popup");
+      }
+    }
     else run();
   });
 
@@ -204,11 +210,34 @@
   }
 
   // The game's popup is not inside the option, so remember the hovered one.
-  let hovered = null;
+  // Only while the pointer is on that option or on the popup we marked: other
+  // game UI also shows "Risk / Rewards" (the event log, for one) and must not
+  // get the last hovered option's notes.
+  const POPUP_ATTR = "data-cor3-exp-popup";
+  let hovered = null; // the option element under the pointer
   document.addEventListener("mouseover", (e) => {
-    const b = optionOf(e.target);
-    if (b) hovered = b;
+    const t = e.target;
+    if (optionOf(t)) hovered = t;
+    else if (!(t && t.closest && t.closest(`[${POPUP_ATTR}]`))) hovered = null;
   }, true);
+  // Gap in px between two boxes (0 when they touch or overlap).
+  const gap = (a, b) => Math.hypot(Math.max(0, a.left - b.right, b.left - a.right),
+    Math.max(0, a.top - b.bottom, b.top - a.bottom));
+  // Of the "Risk / Rewards" boxes outside the options, the hover popup is the
+  // visible one right next to the hovered option.
+  const NEAR = 60;
+  function hoverPopup(popups) {
+    if (!hovered || !hovered.isConnected) return null;
+    const at = hovered.getBoundingClientRect();
+    let best = null, bestGap = NEAR;
+    for (const p of popups) {
+      const box = p.getBoundingClientRect();
+      if (!box.width || !box.height) continue;
+      const g = gap(at, box);
+      if (g <= bestGap) { best = p; bestGap = g; }
+    }
+    return best;
+  }
 
   const ownText = (el) => {
     let t = "";
@@ -231,17 +260,24 @@
     return out;
   }
 
-  function setWord(textNode, word, color) {
-    let span = textNode.nextSibling;
-    if (!(span && span.classList && span.classList.contains(WORD_CLASS))) {
-      span = document.createElement("span");
-      span.className = WORD_CLASS;
-      span.style.cssText = "margin-left:.45em;font-weight:700;letter-spacing:.04em;white-space:nowrap";
-      textNode.parentNode.insertBefore(span, textNode.nextSibling);
-    }
-    const text = word ? `${word}` : "";
-    if (span.textContent !== text) span.textContent = text;
-    if (span.style.color !== color) span.style.color = color || "";
+  // "Risk HIGHER +8 · Rewards MORE +3", coloured, on its own line. Kept out of
+  // the game's label row: written in there it overlapped the labels.
+  function setWords(line, b) {
+    const withNum = (w, n) => `${w[0]}${typeof n === "number" && n !== 0 ? ` ${num(n)}` : ""}`;
+    const parts = [["Risk", RISK_WORD[b.riskChange], b.risk], ["Rewards", LOOT_WORD[b.lootChange], b.loot]]
+      .filter(([, w]) => w);
+    const key = JSON.stringify(parts.map(([l, w, n]) => [l, withNum(w, n)]));
+    if (line.dataset.key === key) return;
+    line.dataset.key = key;
+    line.textContent = "";
+    parts.forEach(([label, w, n], i) => {
+      if (i) line.append(" \u00b7 ");
+      const word = document.createElement("span");
+      word.style.cssText = `color:${w[1]};font-weight:700`;
+      word.textContent = withNum(w, n);
+      line.append(`${label} `, word);
+    });
+    line.style.display = parts.length ? "" : "none";
   }
 
   // Smallest element that holds both the risk and the rewards label.
@@ -250,10 +286,20 @@
     return null;
   }
 
+  function unmark(popup) {
+    const v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
+    if (v) v.remove();
+    if (popup.hasAttribute(POPUP_ATTR)) {
+      popup.style.flexWrap = popup.getAttribute(POPUP_ATTR);
+      popup.removeAttribute(POPUP_ATTR);
+    }
+  }
+
   function annotatePopups() {
     const nodes = labelNodes(document.body);
     const risks = nodes.filter((n) => /risk/i.test(n.nodeValue));
     const loots = nodes.filter((n) => !/risk/i.test(n.nodeValue));
+    const found = [];
     for (const r of risks) {
       // The popup has a Risk and a Rewards label close together, and no other text.
       let popup = null, loot = null;
@@ -267,32 +313,41 @@
         if (!/^risk(rewards?|loot)$/i.test(ownText(p).replace(/[^a-z]/gi, ""))) continue;
         popup = p; loot = l; break;
       }
-      if (!popup) continue;
-      // Inside an option (narrow windows) use that option, else the hovered one.
-      const b = optionOf(popup) || hovered;
-      const rw = b && RISK_WORD[b.riskChange], lw = b && LOOT_WORD[b.lootChange];
-      const withNum = (w, n) => w && (typeof n === "number" && n !== 0 ? `${w[0]} ${num(n)}` : w[0]);
-      setWord(r, withNum(rw, b && b.risk), rw && rw[1]);
-      setWord(loot, withNum(lw, b && b.loot), lw && lw[1]);
+      if (popup) found.push({ popup, b: optionOf(popup) });
+    }
+    // Inside an option (narrow windows) use that option, else the hovered one,
+    // but only for the popup next to it, with its data as it is now.
+    const pick = hoverPopup(found.filter((f) => !f.b).map((f) => f.popup));
+    const fromHover = pick && optionOf(hovered);
+    for (const { popup, b: inside } of found) {
+      const b = inside || (popup === pick ? fromHover : null);
+      if (!b) { unmark(popup); continue; }
       let v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
-      if (!b) { if (v) v.remove(); continue; }
       const [text, color] = verdict(b);
       if (!v) {
         v = document.createElement("div");
         v.className = VERDICT_CLASS;
-        v.style.cssText = "flex-basis:100%;width:100%;margin-top:6px;padding-top:5px;" +
-          "border-top:1px solid rgba(127,154,163,.35);font-weight:700;font-size:.9em;white-space:nowrap";
+        // Wraps inside the game's popup instead of running past its edge.
+        v.style.cssText = "flex-basis:100%;width:100%;min-width:0;box-sizing:border-box;margin-top:6px;padding-top:5px;" +
+          "border-top:1px solid rgba(127,154,163,.35);font-weight:700;font-size:.9em;white-space:normal;overflow-wrap:break-word";
         popup.appendChild(v);
+      }
+      if (!popup.hasAttribute(POPUP_ATTR)) {
+        popup.setAttribute(POPUP_ATTR, popup.style.flexWrap || "");
         // A row popup: let the verdict wrap onto its own line.
         if (getComputedStyle(popup).display.includes("flex")) popup.style.flexWrap = "wrap";
       }
-      let head = v.firstElementChild, sub = head && head.nextElementSibling;
-      if (!head) {
+      let [words, head, sub] = v.children;
+      if (!sub) {
+        v.textContent = "";
+        words = document.createElement("div");
+        words.style.cssText = "font-weight:400;margin-bottom:2px";
         head = document.createElement("div");
         sub = document.createElement("div");
-        sub.style.cssText = `font-weight:400;color:${GREY};margin-top:2px;white-space:pre`;
-        v.append(head, sub);
+        sub.style.cssText = `font-weight:400;color:${GREY};margin-top:2px;white-space:pre-line`;
+        v.append(words, head, sub);
       }
+      setWords(words, b);
       if (head.textContent !== text) head.textContent = text;
       if (head.style.color !== color) head.style.color = color;
       const more = detail(b);

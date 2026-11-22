@@ -16,6 +16,13 @@ and uses it as the release notes. Leave out headings that have nothing under the
   (**1/4** … **4/4**) until you have enough; extra copies say **SELL**. Opening an expedition's container shows the same
   tags on the loot, counted against what you already have. Hover a tag for the stages and counts.
 
+### Fixed
+
+- **Expedition choice popup no longer garbled.** HIGHER / LOWER and MORE / LESS used to be written into the game's own
+  Risk and Rewards labels and could overlap them. They now sit on their own line under the game's row, above the
+  verdict. The notes also stay off other parts of the expedition screen that show "Risk / Rewards", and long verdicts
+  wrap inside the popup.
+
 ## 1.3.1 (2026-11-20)
 
 ### New
