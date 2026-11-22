@@ -46,7 +46,13 @@
   window.__cor3.helper("expeditions", () => state.enabled, (on) => {
     state.enabled = on;
     save(STORE_KEY, state);
-    if (!on) for (const el of document.querySelectorAll(MINE)) el.remove();
+    if (!on) {
+      for (const el of document.querySelectorAll(MINE)) el.remove();
+      for (const el of document.querySelectorAll("[data-cor3-exp-popup]")) {
+        el.style.flexWrap = el.getAttribute("data-cor3-exp-popup");
+        el.removeAttribute("data-cor3-exp-popup");
+      }
+    }
     else run();
   });
 
@@ -204,11 +210,34 @@
   }
 
   // The game's popup is not inside the option, so remember the hovered one.
-  let hovered = null;
+  // Only while the pointer is on that option or on the popup we marked: other
+  // game UI also shows "Risk / Rewards" (the event log, for one) and must not
+  // get the last hovered option's notes.
+  const POPUP_ATTR = "data-cor3-exp-popup";
+  let hovered = null; // the option element under the pointer
   document.addEventListener("mouseover", (e) => {
-    const b = optionOf(e.target);
-    if (b) hovered = b;
+    const t = e.target;
+    if (optionOf(t)) hovered = t;
+    else if (!(t && t.closest && t.closest(`[${POPUP_ATTR}]`))) hovered = null;
   }, true);
+  // Gap in px between two boxes (0 when they touch or overlap).
+  const gap = (a, b) => Math.hypot(Math.max(0, a.left - b.right, b.left - a.right),
+    Math.max(0, a.top - b.bottom, b.top - a.bottom));
+  // Of the "Risk / Rewards" boxes outside the options, the hover popup is the
+  // visible one right next to the hovered option.
+  const NEAR = 60;
+  function hoverPopup(popups) {
+    if (!hovered || !hovered.isConnected) return null;
+    const at = hovered.getBoundingClientRect();
+    let best = null, bestGap = NEAR;
+    for (const p of popups) {
+      const box = p.getBoundingClientRect();
+      if (!box.width || !box.height) continue;
+      const g = gap(at, box);
+      if (g <= bestGap) { best = p; bestGap = g; }
+    }
+    return best;
+  }
 
   const ownText = (el) => {
     let t = "";
@@ -231,6 +260,14 @@
     return out;
   }
 
+  // Notes left behind when the game re-rendered a label (doubled words).
+  function dropStrays() {
+    for (const span of document.querySelectorAll(`.${WORD_CLASS}`)) {
+      const prev = span.previousSibling;
+      if (!(prev && prev.nodeType === 3 && /^\s*(risk|rewards?|loot)\s*$/i.test(prev.nodeValue))) span.remove();
+    }
+  }
+
   function setWord(textNode, word, color) {
     let span = textNode.nextSibling;
     if (!(span && span.classList && span.classList.contains(WORD_CLASS))) {
@@ -241,7 +278,8 @@
     }
     const text = word ? `${word}` : "";
     if (span.textContent !== text) span.textContent = text;
-    if (span.style.color !== color) span.style.color = color || "";
+    if (span.style.color !== (color || "")) span.style.color = color || "";
+    span.style.display = text ? "" : "none";
   }
 
   // Smallest element that holds both the risk and the rewards label.
@@ -250,10 +288,21 @@
     return null;
   }
 
+  function unmark(popup) {
+    const v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
+    if (v) v.remove();
+    if (popup.hasAttribute(POPUP_ATTR)) {
+      popup.style.flexWrap = popup.getAttribute(POPUP_ATTR);
+      popup.removeAttribute(POPUP_ATTR);
+    }
+  }
+
   function annotatePopups() {
+    dropStrays();
     const nodes = labelNodes(document.body);
     const risks = nodes.filter((n) => /risk/i.test(n.nodeValue));
     const loots = nodes.filter((n) => !/risk/i.test(n.nodeValue));
+    const found = [];
     for (const r of risks) {
       // The popup has a Risk and a Rewards label close together, and no other text.
       let popup = null, loot = null;
@@ -267,22 +316,31 @@
         if (!/^risk(rewards?|loot)$/i.test(ownText(p).replace(/[^a-z]/gi, ""))) continue;
         popup = p; loot = l; break;
       }
-      if (!popup) continue;
-      // Inside an option (narrow windows) use that option, else the hovered one.
-      const b = optionOf(popup) || hovered;
+      if (popup) found.push({ r, loot, popup, b: optionOf(popup) });
+    }
+    // Inside an option (narrow windows) use that option, else the hovered one,
+    // but only for the popup next to it, with its data as it is now.
+    const pick = hoverPopup(found.filter((f) => !f.b).map((f) => f.popup));
+    const fromHover = pick && optionOf(hovered);
+    for (const { r, loot, popup, b: inside } of found) {
+      const b = inside || (popup === pick ? fromHover : null);
       const rw = b && RISK_WORD[b.riskChange], lw = b && LOOT_WORD[b.lootChange];
       const withNum = (w, n) => w && (typeof n === "number" && n !== 0 ? `${w[0]} ${num(n)}` : w[0]);
       setWord(r, withNum(rw, b && b.risk), rw && rw[1]);
       setWord(loot, withNum(lw, b && b.loot), lw && lw[1]);
+      if (!b) { unmark(popup); continue; }
       let v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
-      if (!b) { if (v) v.remove(); continue; }
       const [text, color] = verdict(b);
       if (!v) {
         v = document.createElement("div");
         v.className = VERDICT_CLASS;
-        v.style.cssText = "flex-basis:100%;width:100%;margin-top:6px;padding-top:5px;" +
-          "border-top:1px solid rgba(127,154,163,.35);font-weight:700;font-size:.9em;white-space:nowrap";
+        // Wraps inside the game's popup instead of running past its edge.
+        v.style.cssText = "flex-basis:100%;width:100%;min-width:0;box-sizing:border-box;margin-top:6px;padding-top:5px;" +
+          "border-top:1px solid rgba(127,154,163,.35);font-weight:700;font-size:.9em;white-space:normal;overflow-wrap:break-word";
         popup.appendChild(v);
+      }
+      if (!popup.hasAttribute(POPUP_ATTR)) {
+        popup.setAttribute(POPUP_ATTR, popup.style.flexWrap || "");
         // A row popup: let the verdict wrap onto its own line.
         if (getComputedStyle(popup).display.includes("flex")) popup.style.flexWrap = "wrap";
       }
@@ -290,7 +348,7 @@
       if (!head) {
         head = document.createElement("div");
         sub = document.createElement("div");
-        sub.style.cssText = `font-weight:400;color:${GREY};margin-top:2px;white-space:pre`;
+        sub.style.cssText = `font-weight:400;color:${GREY};margin-top:2px;white-space:pre-line`;
         v.append(head, sub);
       }
       if (head.textContent !== text) head.textContent = text;

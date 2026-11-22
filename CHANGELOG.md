@@ -10,6 +10,12 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+### Fixed
+
+- **Expedition choice notes stay where they belong.** The HIGHER / LOWER words and the verdict line no longer
+  get stuck on other parts of the expedition screen that also show "Risk / Rewards", no longer show doubled
+  words after the game redraws, and long verdicts wrap inside the game's popup instead of running past its edge.
+
 ## 1.3.1 (2026-11-20)
 
 ### New
