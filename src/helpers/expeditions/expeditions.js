@@ -1,7 +1,7 @@
 // COR3 expeditions helper.
-// - Makes the game's hover popup on decision options clear: next to "Risk" and
-//   "Rewards" it writes HIGHER / LOWER / SAME (or MORE / LESS) in the right colour
-//   (the game colours "risk up" green), and adds a one-line verdict.
+// - Makes the game's hover popup on decision options clear: under the game's
+//   own row it adds a line "Risk HIGHER · Rewards MORE" (or LOWER / LESS / SAME)
+//   in the right colour (the game colours "risk up" green), and a one-line verdict.
 // - With the expedition data the game sends (read through the websocket hook in
 //   shared/socket.js) it adds the exact numbers: Risk HIGHER +8, the mission risk after
 //   the choice, and the time left to decide.
@@ -18,8 +18,8 @@
 
   const AMBER = "#ffc966";
   const OPTIONS_SEL = '[data-component-name="ExpeditionsEventButtons"]';
-  const WORD_CLASS = "cor3-exp-word", VERDICT_CLASS = "cor3-exp-verdict";
-  const MINE = `.${WORD_CLASS}, .${VERDICT_CLASS}, .${SCORE_CLASS}, .cor3-exp-odds`;
+  const VERDICT_CLASS = "cor3-exp-verdict";
+  const MINE = `.${VERDICT_CLASS}, .${SCORE_CLASS}, .cor3-exp-odds`;
 
   const RISK_WORD = { up: ["HIGHER", RED], down: ["LOWER", GREEN], no_change: ["SAME", GREY] };
   const LOOT_WORD = { up: ["MORE", GREEN], down: ["LESS", RED], no_change: ["SAME", GREY] };
@@ -260,26 +260,24 @@
     return out;
   }
 
-  // Notes left behind when the game re-rendered a label (doubled words).
-  function dropStrays() {
-    for (const span of document.querySelectorAll(`.${WORD_CLASS}`)) {
-      const prev = span.previousSibling;
-      if (!(prev && prev.nodeType === 3 && /^\s*(risk|rewards?|loot)\s*$/i.test(prev.nodeValue))) span.remove();
-    }
-  }
-
-  function setWord(textNode, word, color) {
-    let span = textNode.nextSibling;
-    if (!(span && span.classList && span.classList.contains(WORD_CLASS))) {
-      span = document.createElement("span");
-      span.className = WORD_CLASS;
-      span.style.cssText = "margin-left:.45em;font-weight:700;letter-spacing:.04em;white-space:nowrap";
-      textNode.parentNode.insertBefore(span, textNode.nextSibling);
-    }
-    const text = word ? `${word}` : "";
-    if (span.textContent !== text) span.textContent = text;
-    if (span.style.color !== (color || "")) span.style.color = color || "";
-    span.style.display = text ? "" : "none";
+  // "Risk HIGHER +8 · Rewards MORE +3", coloured, on its own line. Kept out of
+  // the game's label row: written in there it overlapped the labels.
+  function setWords(line, b) {
+    const withNum = (w, n) => `${w[0]}${typeof n === "number" && n !== 0 ? ` ${num(n)}` : ""}`;
+    const parts = [["Risk", RISK_WORD[b.riskChange], b.risk], ["Rewards", LOOT_WORD[b.lootChange], b.loot]]
+      .filter(([, w]) => w);
+    const key = JSON.stringify(parts.map(([l, w, n]) => [l, withNum(w, n)]));
+    if (line.dataset.key === key) return;
+    line.dataset.key = key;
+    line.textContent = "";
+    parts.forEach(([label, w, n], i) => {
+      if (i) line.append(" \u00b7 ");
+      const word = document.createElement("span");
+      word.style.cssText = `color:${w[1]};font-weight:700`;
+      word.textContent = withNum(w, n);
+      line.append(`${label} `, word);
+    });
+    line.style.display = parts.length ? "" : "none";
   }
 
   // Smallest element that holds both the risk and the rewards label.
@@ -298,7 +296,6 @@
   }
 
   function annotatePopups() {
-    dropStrays();
     const nodes = labelNodes(document.body);
     const risks = nodes.filter((n) => /risk/i.test(n.nodeValue));
     const loots = nodes.filter((n) => !/risk/i.test(n.nodeValue));
@@ -316,18 +313,14 @@
         if (!/^risk(rewards?|loot)$/i.test(ownText(p).replace(/[^a-z]/gi, ""))) continue;
         popup = p; loot = l; break;
       }
-      if (popup) found.push({ r, loot, popup, b: optionOf(popup) });
+      if (popup) found.push({ popup, b: optionOf(popup) });
     }
     // Inside an option (narrow windows) use that option, else the hovered one,
     // but only for the popup next to it, with its data as it is now.
     const pick = hoverPopup(found.filter((f) => !f.b).map((f) => f.popup));
     const fromHover = pick && optionOf(hovered);
-    for (const { r, loot, popup, b: inside } of found) {
+    for (const { popup, b: inside } of found) {
       const b = inside || (popup === pick ? fromHover : null);
-      const rw = b && RISK_WORD[b.riskChange], lw = b && LOOT_WORD[b.lootChange];
-      const withNum = (w, n) => w && (typeof n === "number" && n !== 0 ? `${w[0]} ${num(n)}` : w[0]);
-      setWord(r, withNum(rw, b && b.risk), rw && rw[1]);
-      setWord(loot, withNum(lw, b && b.loot), lw && lw[1]);
       if (!b) { unmark(popup); continue; }
       let v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
       const [text, color] = verdict(b);
@@ -344,13 +337,17 @@
         // A row popup: let the verdict wrap onto its own line.
         if (getComputedStyle(popup).display.includes("flex")) popup.style.flexWrap = "wrap";
       }
-      let head = v.firstElementChild, sub = head && head.nextElementSibling;
-      if (!head) {
+      let [words, head, sub] = v.children;
+      if (!sub) {
+        v.textContent = "";
+        words = document.createElement("div");
+        words.style.cssText = "font-weight:400;margin-bottom:2px";
         head = document.createElement("div");
         sub = document.createElement("div");
         sub.style.cssText = `font-weight:400;color:${GREY};margin-top:2px;white-space:pre-line`;
-        v.append(head, sub);
+        v.append(words, head, sub);
       }
+      setWords(words, b);
       if (head.textContent !== text) head.textContent = text;
       if (head.style.color !== color) head.style.color = color;
       const more = detail(b);

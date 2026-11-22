@@ -100,7 +100,7 @@ server your HACK can't beat or a file no installed program can decrypt.
 
 <img src="store/screenshots/2-expeditions.png" alt="Expedition decision popup with exact risk and reward numbers" width="640">
 
-The game's risk/rewards popup is tiny and colours "risk up" green. The helper makes it clear:
+The game's risk/rewards popup is tiny and colours "risk up" green. The helper adds a few lines under it:
 
 - **Risk HIGHER +8** in red or **LOWER −20** in green, **Rewards MORE +3** or **LESS −2**, with the exact numbers.
 - A one-line verdict: **★ No downside**, **Trade-off: +3 loot for +8 risk**, **✕ More danger, nothing gained**.
