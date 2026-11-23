@@ -41,13 +41,16 @@
   // style sheet, again only when a sheet gains rules.
   const glassRules = new Map(); // selector -> css
   const seenRules = new WeakMap(); // sheet -> rule count read
+  const INK = [8, 14, 18]; // the game's dark background
   function solid(color) {
     const m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+%?))?\s*\)$/.exec(color || "");
     if (!m) return "";
-    let a = m[4] == null ? 1 : m[4].endsWith("%") ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
+    const a = m[4] == null ? 1 : m[4].endsWith("%") ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
     if (a >= 0.9) return "";
-    // Fully clear panels get the game's dark ink; others keep their colour.
-    const [r, g, b] = a < 0.05 ? [8, 14, 18] : [m[1], m[2], m[3]];
+    // The panel's colour laid over the dark ink at its own strength, so it
+    // looks as it did over the dark game: a faint white tint (the mailbox
+    // cards) stays dark grey instead of turning white.
+    const [r, g, b] = [m[1], m[2], m[3]].map((c, i) => Math.round(INK[i] * (1 - a) + parseFloat(c) * a));
     return `background-color: rgba(${r}, ${g}, ${b}, 0.94) !important;`;
   }
   function readRules(rules) {
