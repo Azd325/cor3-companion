@@ -20,6 +20,13 @@ and uses it as the release notes. Leave out headings that have nothing under the
   (**1/4** … **4/4**) until you have enough; extra copies say **SELL**. Opening an expedition's container shows the same
   tags on the loot, counted against what you already have. Hover a tag for the stages and counts.
 
+### Improved
+
+- **Lighter screen is now Lite mode (Alt+V).** Besides hiding the moving backgrounds and the map fog, it makes the
+  frosted-glass windows solid and stops decoration that animates forever, so the game runs much lighter on slower
+  computers or with hardware acceleration off. Minigames and timers are left alone. When your browser draws the
+  game without the graphics card, the top bar offers it once.
+
 ### Fixed
 
 - **Expedition choice popup no longer garbled.** HIGHER / LOWER and MORE / LESS used to be written into the game's own
