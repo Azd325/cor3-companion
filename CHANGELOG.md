@@ -10,6 +10,8 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+## 1.4.1 (2026-11-23)
+
 ### Fixed
 
 - **Mailbox messages readable in Lite mode.** With Lite mode on, the message cards in the stash's mailbox turned
