@@ -17,7 +17,7 @@ globalThis.__cor3Helpers = [
   { id: "expeditions", name: "Expeditions", key: "E", net: true,
     desc: "Exact risk and rewards on choices, and mercenary odds." },
   { id: "inventory", name: "Inventory", key: "I", net: true,
-    desc: "Sell price on every item and a border in its rarity colour." },
+    desc: "Sell price and rarity border on every item; drone parts marked keep or sell." },
   { id: "lighter", name: "Lite mode", key: "V",
     desc: "Turns off heavy effects (moving backgrounds, blur, endless animations). For slower computers or no hardware acceleration." },
   { id: "topbar", name: "Top bar", key: "B",

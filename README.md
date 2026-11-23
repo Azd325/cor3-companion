@@ -20,7 +20,7 @@ Free, no account, no tracking. Works in Firefox, Chrome, Edge and Brave.
 | [Expeditions](#expeditions) | Clear risk and reward numbers on every decision, and real death odds | Alt+E |
 | [Loadout & market](#loadout--market) | Whether a part or program is an upgrade before you buy it | Alt+L |
 | [ICE WALL Break](#ice-wall-break) | Where the pattern can still fit, until only the answer is left | Alt+H |
-| [Inventory](#inventory) | Sell prices, rarity colours and your stash's total value | Alt+I |
+| [Inventory](#inventory) | Sell prices, rarity colours, your stash's total value and drone parts to keep | Alt+I |
 | [Protocol solver](#protocol-solver) | The best next move in the cleaner-bot protocol minigame | Alt+P |
 | [Daily ops](#daily-ops) | Spots the bad log lines and decodes the signal for you | Alt+D |
 | [Top bar](#top-bar) | What needs you now, at a glance | Alt+B |
@@ -39,14 +39,8 @@ stores when Edge asks.
 
 ### Firefox
 
-COR3 Companion is on its way to Firefox Add-ons. Until it's there:
-
-1. On the [releases page](https://github.com/nvanderwaal/cor3-companion/releases), click
-   `cor3-companion-firefox.xpi` in the newest release that has it. A new release gets it once Mozilla has
-   reviewed that version, which can take a day or two.
-2. Firefox asks to install the add-on: click **Continue to Installation**, then **Add**.
-
-It's signed by Mozilla and **updates itself**, also to the Firefox Add-ons version once that's out.
+Install it from [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/cor3-companion/): click
+**Add to Firefox**, then **Add**. It **updates itself**.
 
 ### Manual install on Chrome (no store)
 
@@ -100,7 +94,7 @@ server your HACK can't beat or a file no installed program can decrypt.
 
 <img src="store/screenshots/2-expeditions.png" alt="Expedition decision popup with exact risk and reward numbers" width="640">
 
-The game's risk/rewards popup is tiny and colours "risk up" green. The helper makes it clear:
+The game's risk/rewards popup is tiny and colours "risk up" green. The helper adds a few lines under it:
 
 - **Risk HIGHER +8** in red or **LOWER −20** in green, **Rewards MORE +3** or **LESS −2**, with the exact numbers.
 - A one-line verdict: **★ No downside**, **Trade-off: +3 loot for +8 risk**, **✕ More danger, nothing gained**.
@@ -136,6 +130,14 @@ revealed the options shrink, until one turns green with **MATCH**: that's the an
 
 Every item gets its sell price in the corner (**12k cr**) and a border in its rarity colour. A line on top shows
 your stash's total value and the slots used. Hover a stack's price to see the whole stack's value.
+
+Items you can hand in for the personal drone (Expeditions > Personal drone assembling) get a small tag above the
+price that counts them: with 4 Circuit components needed, they say **1/4**, **2/4**, **3/4**, **4/4** (green),
+and any after that say **SELL** (grey). The same tags show on the loot when you open an expedition's container,
+counting on from what's already in your stash: have 2 of 3 milk and the next one says **3/3**, the one after
+**SPARE**. Hover a tag for
+the drone stages and how many you need. The list of parts comes from the community guide, since the game doesn't
+send it; every option of a stage counts, so you may need fewer if you pay credits or pick another option.
 
 ## Protocol solver
 
@@ -179,8 +181,8 @@ When your browser is drawing the game without the graphics card, the top bar off
 
 **Installed the unzipped Chrome copy earlier?** Add COR3 Companion from the
 [Chrome Web Store](https://chromewebstore.google.com/detail/cor3-companion/klgheffipeaecholkjggmklgbmbnbfbi), then
-remove the old copy in `chrome://extensions` and delete its folder, so you get updates automatically. On Firefox
-there's nothing to do: it moves to the store version by itself. Your settings stay either way.
+remove the old copy in `chrome://extensions` and delete its folder, so you get updates automatically. Installed
+the Firefox `.xpi` from GitHub? There's nothing to do: it moves to the Firefox Add-ons version by itself. Your settings stay either way.
 
 **A helper shows ⚠?** The game changed the data that helper reads, so it may show wrong or no info until
 COR3 Companion is updated. You'll see it on **Helpers ▾** in the top bar and in the toolbar menu. The other

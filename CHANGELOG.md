@@ -10,12 +10,29 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+### New
+
+- **On Firefox Add-ons.** Install COR3 Companion on Firefox from
+  [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/cor3-companion/) and it updates itself. Installed the
+  `.xpi` from GitHub? Nothing to do: it moves to the Add-ons version by itself, and your settings stay.
+
+- **Drone parts marked in your stash and loot.** Items the personal drone's stages take are counted on a tag
+  (**1/4** … **4/4**) until you have enough; extra copies say **SELL**. Opening an expedition's container shows the same
+  tags on the loot, counted against what you already have. Hover a tag for the stages and counts.
+
 ### Improved
 
 - **Lighter screen is now Lite mode (Alt+V).** Besides hiding the moving backgrounds and the map fog, it makes the
   frosted-glass windows solid and stops decoration that animates forever, so the game runs much lighter on slower
   computers or with hardware acceleration off. Minigames and timers are left alone. When your browser draws the
   game without the graphics card, the top bar offers it once.
+
+### Fixed
+
+- **Expedition choice popup no longer garbled.** HIGHER / LOWER and MORE / LESS used to be written into the game's own
+  Risk and Rewards labels and could overlap them. They now sit on their own line under the game's row, above the
+  verdict. The notes also stay off other parts of the expedition screen that show "Risk / Rewards", and long verdicts
+  wrap inside the popup.
 
 ## 1.3.1 (2026-11-20)
 
