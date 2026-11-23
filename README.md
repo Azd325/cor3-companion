@@ -39,14 +39,8 @@ stores when Edge asks.
 
 ### Firefox
 
-COR3 Companion is on its way to Firefox Add-ons. Until it's there:
-
-1. On the [releases page](https://github.com/nvanderwaal/cor3-companion/releases), click
-   `cor3-companion-firefox.xpi` in the newest release that has it. A new release gets it once Mozilla has
-   reviewed that version, which can take a day or two.
-2. Firefox asks to install the add-on: click **Continue to Installation**, then **Add**.
-
-It's signed by Mozilla and **updates itself**, also to the Firefox Add-ons version once that's out.
+Install it from [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/cor3-companion/): click
+**Add to Firefox**, then **Add**. It **updates itself**.
 
 ### Manual install on Chrome (no store)
 
@@ -182,8 +176,8 @@ Off until you switch it on.
 
 **Installed the unzipped Chrome copy earlier?** Add COR3 Companion from the
 [Chrome Web Store](https://chromewebstore.google.com/detail/cor3-companion/klgheffipeaecholkjggmklgbmbnbfbi), then
-remove the old copy in `chrome://extensions` and delete its folder, so you get updates automatically. On Firefox
-there's nothing to do: it moves to the store version by itself. Your settings stay either way.
+remove the old copy in `chrome://extensions` and delete its folder, so you get updates automatically. Installed
+the Firefox `.xpi` from GitHub? There's nothing to do: it moves to the Firefox Add-ons version by itself. Your settings stay either way.
 
 **A helper shows ⚠?** The game changed the data that helper reads, so it may show wrong or no info until
 COR3 Companion is updated. You'll see it on **Helpers ▾** in the top bar and in the toolbar menu. The other
