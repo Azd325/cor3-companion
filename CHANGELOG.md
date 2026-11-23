@@ -10,6 +10,8 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+## 1.4.0 (2026-11-23)
+
 ### New
 
 - **On Firefox Add-ons.** Install COR3 Companion on Firefox from
