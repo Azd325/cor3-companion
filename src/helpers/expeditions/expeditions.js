@@ -302,12 +302,24 @@
   function placeUnder(anchor, note) {
     const rect = anchor.getBoundingClientRect();
     const margin = 8;
-    let left = rect.left;
     const width = note.offsetWidth;
-    if (left + width > window.innerWidth - margin) left = Math.max(margin, window.innerWidth - margin - width);
-    if (left < margin) left = margin;
-    note.style.left = `${Math.round(left)}px`;
-    note.style.top = `${Math.round(rect.bottom)}px`;
+    const height = note.offsetHeight;
+    const clampLeft = (x) => Math.max(margin, Math.min(x, window.innerWidth - margin - width));
+    const siblings = [...(anchor.parentElement ? anchor.parentElement.children : [])]
+      .filter((el) => el !== anchor)
+      .map((el) => el.getBoundingClientRect());
+    const candidates = [
+      { left: clampLeft(rect.left), top: rect.bottom },
+      { left: clampLeft(rect.left), top: rect.top - height },
+      { left: rect.right, top: rect.top },
+      { left: rect.left - width, top: rect.top },
+    ];
+    const fits = (c) =>
+      c.left >= 0 && c.top >= 0 && c.left + width <= window.innerWidth && c.top + height <= window.innerHeight &&
+      !siblings.some((s) => c.left < s.right && c.left + width > s.left && c.top < s.bottom && c.top + height > s.top);
+    const spot = candidates.find(fits) || candidates[0];
+    note.style.left = `${Math.round(spot.left)}px`;
+    note.style.top = `${Math.round(spot.top)}px`;
   }
 
   function annotatePopups() {
