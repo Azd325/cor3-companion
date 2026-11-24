@@ -10,6 +10,10 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+### Fixed
+
+- The helpers no longer load on the community forum.
+
 ## 1.4.1 (2026-11-23)
 
 ### Fixed
