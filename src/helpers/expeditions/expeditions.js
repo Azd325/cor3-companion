@@ -1,7 +1,7 @@
 // COR3 expeditions helper.
-// - Makes the game's hover popup on decision options clear: under the game's
-//   own row it adds a line "Risk HIGHER · Rewards MORE" (or LOWER / LESS / SAME)
-//   in the right colour (the game colours "risk up" green), and a one-line verdict.
+// - On a decision option, adds a line "Risk HIGHER · Rewards MORE" (or LOWER /
+//   LESS / SAME) in the right colour (the game colours "risk up" green), and a
+//   one-line verdict. The line sits under the choice, not in the game's tooltip.
 // - With the expedition data the game sends (read through the websocket hook in
 //   shared/socket.js) it adds the exact numbers: Risk HIGHER +8, the mission risk after
 //   the choice, and the time left to decide.
@@ -20,6 +20,7 @@
   const OPTIONS_SEL = '[data-component-name="ExpeditionsEventButtons"]';
   const VERDICT_CLASS = "cor3-exp-verdict";
   const MINE = `.${VERDICT_CLASS}, .${SCORE_CLASS}, .cor3-exp-odds`;
+  let floatNote = null;
 
   const RISK_WORD = { up: ["HIGHER", RED], down: ["LOWER", GREEN], no_change: ["SAME", GREY] };
   const LOOT_WORD = { up: ["MORE", GREEN], down: ["LESS", RED], no_change: ["SAME", GREY] };
@@ -48,10 +49,7 @@
     save(STORE_KEY, state);
     if (!on) {
       for (const el of document.querySelectorAll(MINE)) el.remove();
-      for (const el of document.querySelectorAll("[data-cor3-exp-popup]")) {
-        el.style.flexWrap = el.getAttribute("data-cor3-exp-popup");
-        el.removeAttribute("data-cor3-exp-popup");
-      }
+      floatNote = null;
     }
     else run();
   });
@@ -209,56 +207,36 @@
     return parts.join("\n");
   }
 
-  // The game's popup is not inside the option, so remember the hovered one.
-  // Only while the pointer is on that option or on the popup we marked: other
-  // game UI also shows "Risk / Rewards" (the event log, for one) and must not
-  // get the last hovered option's notes.
-  const POPUP_ATTR = "data-cor3-exp-popup";
-  let hovered = null; // the option element under the pointer
+  // The choice tooltip is position:absolute above the button, inside the
+  // events panel (overflow:hidden). Extra height there is clipped at the top
+  // and lands on the button. The note is our own node under the choice.
+  // A narrow window inlines the same two rows in the button item; the note
+  // follows the button, still outside that button.
+  const TIP_SEL = '[data-component-name="ExpeditionsEventButtonTooltip"]';
+  const ITEM_SEL = '[data-component-name="ExpeditionsEventButtonItem"]';
+  const ROW_SEL = '[data-component-name="ExpeditionsEventButtonTooltipItem"]';
+  let hovered = null; // the choice wrapper under the pointer
   document.addEventListener("mouseover", (e) => {
     const t = e.target;
-    if (optionOf(t)) hovered = t;
-    else if (!(t && t.closest && t.closest(`[${POPUP_ATTR}]`))) hovered = null;
+    if (!(t && t.closest)) return;
+    if (t.closest(`.${VERDICT_CLASS}`)) return;
+    const box = t.closest(OPTIONS_SEL);
+    const next = box && optionOf(t) ? [...box.children].find((c) => c.contains(t)) || null : null;
+    if (next === hovered) return;
+    hovered = next;
+    run();
   }, true);
-  // Gap in px between two boxes (0 when they touch or overlap).
-  const gap = (a, b) => Math.hypot(Math.max(0, a.left - b.right, b.left - a.right),
-    Math.max(0, a.top - b.bottom, b.top - a.bottom));
-  // Of the "Risk / Rewards" boxes outside the options, the hover popup is the
-  // visible one right next to the hovered option.
-  const NEAR = 60;
-  function hoverPopup(popups) {
-    if (!hovered || !hovered.isConnected) return null;
-    const at = hovered.getBoundingClientRect();
-    let best = null, bestGap = NEAR;
-    for (const p of popups) {
-      const box = p.getBoundingClientRect();
-      if (!box.width || !box.height) continue;
-      const g = gap(at, box);
-      if (g <= bestGap) { best = p; bestGap = g; }
-    }
-    return best;
+  document.addEventListener("scroll", () => { if (hovered) run(); }, true);
+
+  // Risk row, then rewards row. The game translates the words; the order does not change.
+  function modifierRows(root) {
+    const box = root.querySelector('[data-component-name="ExpeditionsEventButtonModifiers"]');
+    return [...(box || root).children].filter((el) => el.matches && el.matches(ROW_SEL));
   }
 
-  const ownText = (el) => {
-    let t = "";
-    for (const n of el.childNodes) {
-      if (n.nodeType === 3) t += n.nodeValue;
-      else if (!(n.matches && n.matches(MINE))) t += ownText(n);
-    }
-    return t;
-  };
-
-  // Text nodes that are exactly "Risk" or "Rewards"/"Loot" (the popup's labels).
-  function labelNodes(root) {
-    const out = [];
-    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-      acceptNode: (n) => /^\s*(risk|rewards?|loot)\s*$/i.test(n.nodeValue) &&
-        !(n.parentElement && n.parentElement.closest(MINE))
-        ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP,
-    });
-    for (let n; (n = walk.nextNode());) out.push(n);
-    return out;
-  }
+  const NOTE_CSS = "box-sizing:border-box;max-width:280px;padding:6px 8px 8px;" +
+    "border:1px solid rgba(127,154,163,.35);border-radius:8px;background:#0b1015;" +
+    "color:#c5d5db;font-weight:700;font-size:.9em;line-height:1.35;white-space:normal;overflow-wrap:break-word";
 
   // "Risk HIGHER +8 · Rewards MORE +3", coloured, on its own line. Kept out of
   // the game's label row: written in there it overlapped the labels.
@@ -280,80 +258,80 @@
     line.style.display = parts.length ? "" : "none";
   }
 
-  // Smallest element that holds both the risk and the rewards label.
-  function commonParent(a, b) {
-    for (let el = a.parentElement; el; el = el.parentElement) if (el.contains(b)) return el;
-    return null;
+  function fillNote(v, b) {
+    let [words, head, sub] = v.children;
+    if (!sub) {
+      v.textContent = "";
+      words = document.createElement("div");
+      words.style.cssText = "font-weight:400;margin-bottom:2px";
+      head = document.createElement("div");
+      sub = document.createElement("div");
+      sub.style.cssText = `font-weight:400;color:${GREY};margin-top:2px;white-space:pre-line`;
+      v.append(words, head, sub);
+    }
+    const [text, color] = verdict(b);
+    setWords(words, b);
+    if (head.textContent !== text) head.textContent = text;
+    if (head.style.color !== color) head.style.color = color;
+    const more = detail(b);
+    if (sub.textContent !== more) sub.textContent = more;
+    sub.style.display = more ? "" : "none";
   }
 
-  function unmark(popup) {
-    const v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
-    if (v) v.remove();
-    if (popup.hasAttribute(POPUP_ATTR)) {
-      popup.style.flexWrap = popup.getAttribute(POPUP_ATTR);
-      popup.removeAttribute(POPUP_ATTR);
+  function noteIn(parent) {
+    let v = parent.querySelector(`:scope > .${VERDICT_CLASS}`);
+    if (!v) {
+      v = document.createElement("div");
+      v.className = VERDICT_CLASS;
+      v.style.cssText = NOTE_CSS + ";width:100%";
+      parent.appendChild(v);
     }
+    return v;
+  }
+
+  function noteOutside() {
+    if (floatNote && floatNote.isConnected) return floatNote;
+    floatNote = document.createElement("div");
+    floatNote.className = VERDICT_CLASS;
+    // Clicks pass through, so the note cannot cover a choice button.
+    floatNote.style.cssText = NOTE_CSS + ";position:fixed;z-index:40;margin:0;pointer-events:none";
+    document.body.appendChild(floatNote);
+    return floatNote;
+  }
+
+  function placeUnder(anchor, note) {
+    const rect = anchor.getBoundingClientRect();
+    const margin = 8;
+    let left = rect.left;
+    const width = note.offsetWidth;
+    if (left + width > window.innerWidth - margin) left = Math.max(margin, window.innerWidth - margin - width);
+    if (left < margin) left = margin;
+    note.style.left = `${Math.round(left)}px`;
+    note.style.top = `${Math.round(rect.bottom)}px`;
   }
 
   function annotatePopups() {
-    const nodes = labelNodes(document.body);
-    const risks = nodes.filter((n) => /risk/i.test(n.nodeValue));
-    const loots = nodes.filter((n) => !/risk/i.test(n.nodeValue));
-    const found = [];
-    for (const r of risks) {
-      // The popup has a Risk and a Rewards label close together, and no other text.
-      let popup = null, loot = null;
-      for (const l of loots) {
-        const p = commonParent(r, l);
-        if (!p) continue;
-        let depth = 0;
-        for (let el = r.parentElement; el && el !== p; el = el.parentElement) depth++;
-        if (depth > 4) continue;
-        // Ignore chevrons and other symbols; only the two words may be there.
-        if (!/^risk(rewards?|loot)$/i.test(ownText(p).replace(/[^a-z]/gi, ""))) continue;
-        popup = p; loot = l; break;
-      }
-      if (popup) found.push({ popup, b: optionOf(popup) });
+    const kept = new Set();
+    for (const item of document.querySelectorAll(ITEM_SEL)) {
+      const stale = item.querySelector(`:scope > .${VERDICT_CLASS}`);
+      if (modifierRows(item).length < 2) { if (stale) stale.remove(); continue; }
+      const b = optionOf(item);
+      if (!b) { if (stale) stale.remove(); continue; }
+      const note = noteIn(item);
+      fillNote(note, b);
+      kept.add(note);
     }
-    // Inside an option (narrow windows) use that option, else the hovered one,
-    // but only for the popup next to it, with its data as it is now.
-    const pick = hoverPopup(found.filter((f) => !f.b).map((f) => f.popup));
-    const fromHover = pick && optionOf(hovered);
-    for (const { popup, b: inside } of found) {
-      const b = inside || (popup === pick ? fromHover : null);
-      if (!b) { unmark(popup); continue; }
-      let v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
-      const [text, color] = verdict(b);
-      if (!v) {
-        v = document.createElement("div");
-        v.className = VERDICT_CLASS;
-        // Wraps inside the game's popup instead of running past its edge.
-        v.style.cssText = "flex-basis:100%;width:100%;min-width:0;box-sizing:border-box;margin-top:6px;padding-top:5px;" +
-          "border-top:1px solid rgba(127,154,163,.35);font-weight:700;font-size:.9em;white-space:normal;overflow-wrap:break-word";
-        popup.appendChild(v);
-      }
-      if (!popup.hasAttribute(POPUP_ATTR)) {
-        popup.setAttribute(POPUP_ATTR, popup.style.flexWrap || "");
-        // A row popup: let the verdict wrap onto its own line.
-        if (getComputedStyle(popup).display.includes("flex")) popup.style.flexWrap = "wrap";
-      }
-      let [words, head, sub] = v.children;
-      if (!sub) {
-        v.textContent = "";
-        words = document.createElement("div");
-        words.style.cssText = "font-weight:400;margin-bottom:2px";
-        head = document.createElement("div");
-        sub = document.createElement("div");
-        sub.style.cssText = `font-weight:400;color:${GREY};margin-top:2px;white-space:pre-line`;
-        v.append(words, head, sub);
-      }
-      setWords(words, b);
-      if (head.textContent !== text) head.textContent = text;
-      if (head.style.color !== color) head.style.color = color;
-      const more = detail(b);
-      if (sub.textContent !== more) sub.textContent = more;
-      sub.style.display = more ? "" : "none";
+    const anchor = hovered && hovered.isConnected ? hovered : null;
+    const tip = anchor && [...anchor.querySelectorAll(TIP_SEL)].find((t) => !t.closest(ITEM_SEL) && modifierRows(t).length >= 2);
+    const wide = tip && optionOf(anchor);
+    if (wide) {
+      const note = noteOutside();
+      fillNote(note, wide);
+      placeUnder(anchor, note);
+      kept.add(note);
     }
+    for (const n of document.querySelectorAll(`.${VERDICT_CLASS}`)) if (!kept.has(n)) n.remove();
+    if (floatNote && !floatNote.isConnected) floatNote = null;
   }
 
   // Find the raw mission (it has a numeric riskScore) above the raid info block.

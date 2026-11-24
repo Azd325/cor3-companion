@@ -10,6 +10,10 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+### Fixed
+
+- The expedition note no longer covers the choice or clips the game's own row.
+
 ## 1.4.2 (2026-11-24)
 
 ### Fixed
