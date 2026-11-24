@@ -39,13 +39,7 @@ const rows = [...list.children];
 const hint = document.getElementById("hint");
 
 async function cor3Tabs() {
-  try {
-    const found = await api.tabs.query({ url: COR3 });
-    return found.filter((t) => {
-      try { return new URL(t.url).hostname !== "community.cor3.gg"; }
-      catch (_) { return false; }
-    });
-  } catch (_) { return []; }
+  try { return await api.tabs.query({ url: COR3 }); } catch (_) { return []; }
 }
 
 async function send(tab, msg) {
