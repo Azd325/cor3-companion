@@ -299,12 +299,13 @@
     return floatNote;
   }
 
-  function placeUnder(anchor, note) {
+  function placeUnder(anchor, tip, note) {
     const rect = anchor.getBoundingClientRect();
     const margin = 8;
     const width = note.offsetWidth;
     const height = note.offsetHeight;
     const clampLeft = (x) => Math.max(margin, Math.min(x, window.innerWidth - margin - width));
+    const gameRects = [anchor, tip].map((el) => el.getBoundingClientRect());
     const siblings = [...(anchor.parentElement ? anchor.parentElement.children : [])]
       .filter((el) => el !== anchor)
       .map((el) => el.getBoundingClientRect());
@@ -314,10 +315,12 @@
       { left: rect.right, top: rect.top },
       { left: rect.left - width, top: rect.top },
     ];
+    const hits = (c, r) => c.left < r.right && c.left + width > r.left && c.top < r.bottom && c.top + height > r.top;
+    const clearOfGame = (c) => !gameRects.some((r) => hits(c, r));
     const fits = (c) =>
       c.left >= 0 && c.top >= 0 && c.left + width <= window.innerWidth && c.top + height <= window.innerHeight &&
-      !siblings.some((s) => c.left < s.right && c.left + width > s.left && c.top < s.bottom && c.top + height > s.top);
-    const spot = candidates.find(fits) || candidates[0];
+      clearOfGame(c) && !siblings.some((r) => hits(c, r));
+    const spot = candidates.find(fits) || candidates.slice(2).find(clearOfGame) || candidates[2];
     note.style.left = `${Math.round(spot.left)}px`;
     note.style.top = `${Math.round(spot.top)}px`;
   }
@@ -339,7 +342,7 @@
     if (wide) {
       const note = noteOutside();
       fillNote(note, wide);
-      placeUnder(anchor, note);
+      placeUnder(anchor, tip, note);
       kept.add(note);
     }
     for (const n of document.querySelectorAll(`.${VERDICT_CLASS}`)) if (!kept.has(n)) n.remove();
