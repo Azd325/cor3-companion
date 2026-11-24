@@ -37,6 +37,7 @@ and uses it as the release notes. Leave out headings that have nothing under the
   moves below the option when there is no room above it.
 - Stash prices stay on one line (1.1k cr), so they no longer push the game's stack count (1/3) out of view.
 - The protocol hint no longer disappears after your second guess, when the log repeats each guess as "Input: … Result: …".
+- The error-button outlines follow the fixed button order, so they keep working if the game later translates these labels.
 
 ## 1.4.2 (2026-11-24)
 
