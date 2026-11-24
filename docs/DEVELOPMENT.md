@@ -81,10 +81,8 @@ version. `.github/workflows/release.yml` then:
    (`node scripts/chrome-upload.mjs`). A version still in review is withdrawn and replaced.
 
 Both stores review new versions. Mozilla usually approves within minutes; if it wants a human review,
-the run waits 5 minutes, then releases without the `.xpi` and AMO publishes it once approved. The
-**Attach Firefox file** workflow (`scripts/attach-xpi.mjs`, hourly) then adds the signed `.xpi` and
-`updates.json` to that release. Google's
-review takes from hours to a few days, after which Chrome copies update by themselves.
+the run waits 5 minutes, then releases without the `.xpi` and `updates.json`, and AMO publishes it once
+approved. Google's review takes from hours to a few days, after which Chrome copies update by themselves.
 
 Store listings, screenshots and the privacy tab answers are in [`store/`](../store/listing.md).
 The privacy policy is [`PRIVACY.md`](../PRIVACY.md).
