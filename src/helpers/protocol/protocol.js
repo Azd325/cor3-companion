@@ -97,26 +97,40 @@
   const findWindow = () => q(document, "ConfigHackApplication");
   const logOf = (win) => win.querySelector('[data-sentry-element="LogContentStyled"]');
 
-  // Log lines: "→ v1.0 / v1.1 / v2.0" per field, "Attempts: …", and per attempt
-  // "Input: v1.0 GET LTE AES" / "Result:" / "Mismatched 2".
+  // "→ v1.0 / v1.1 / v2.0" per field, "Attempts: N | Time: …", then "> guess"
+  // and "Mismatched N" or "Matched". Older logs use one "Input: … Result: Mismatched N" line.
   function readLog(log) {
     // Only innermost divs, so a wrapper's text never counts an attempt twice.
     const lines = [...log.querySelectorAll("div")].filter((d) => !d.querySelector("div") && !d.closest(`.${NOTE_CLASS}`))
       .map((d) => d.textContent.trim()).filter(Boolean);
     const fields = [], history = [];
-    let limit = null;
+    let limit = null, pending = null;
     for (const line of lines) {
       const inp = line.match(/^Input:\s*(.+?)\s*Result:\s*Mismatched\s*(\d+)/is);
-      if (inp) { history.push({ values: inp[1].trim().split(/\s+/), mismatched: Number(inp[2]) }); continue; }
+      if (inp) { history.push({ values: inp[1].trim().split(/\s+/), mismatched: Number(inp[2]) }); pending = null; continue; }
+      const guess = line.match(/^>\s*(.+)$/);
+      if (guess) { pending = guess[1].trim().split(/\s+/); continue; }
+      const mis = line.match(/^Mismatched\s+(\d+)$/i);
+      if (mis) {
+        if (pending) history.push({ values: pending, mismatched: Number(mis[1]) });
+        pending = null;
+        continue;
+      }
+      if (/^Matched$/i.test(line)) {
+        if (pending) history.push({ values: pending, mismatched: 0 });
+        pending = null;
+        continue;
+      }
+      if (/^attempts left\s*==/i.test(line)) continue;
       const opt = line.match(/→\s*(.+)/);
       if (opt) {
         const f = opt[1].split("/").map((s) => s.trim()).filter(Boolean);
         if (f.length > 1) fields.push(f);
         continue;
       }
-      // "Attempts: 4" (or "2/4"): the first one, before any attempt, is the round's total.
+      // "Attempts: 6 | Time: 120s" (or "2/4"): the first one is the round's total.
       const att = line.match(/^Attempts:\s*(\d+)(?:\s*\/\s*(\d+))?/i);
-      if (att && limit == null) limit = Number(att[2] || att[1]) + (att[2] ? 0 : history.length);
+      if (att && limit == null) limit = Number(att[2] || att[1]);
     }
     return { fields, history, limit };
   }
