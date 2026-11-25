@@ -94,11 +94,10 @@ server your HACK can't beat or a file no installed program can decrypt.
 
 <img src="store/screenshots/2-expeditions.png" alt="Expedition decision popup with exact risk and reward numbers" width="640">
 
-The game's risk/rewards popup is tiny and colours "risk up" green. The helper adds a few lines under it:
-
-- **Risk HIGHER +8** in red or **LOWER −20** in green, **Rewards MORE +3** or **LESS −2**, with the exact numbers.
-- A one-line verdict: **★ No downside**, **Trade-off: +3 loot for +8 risk**, **✕ More danger, nothing gained**.
-- The mission's risk after your choice (**Mission risk 52 → 60**) and the time left to decide.
+The game's risk/rewards popup only shows arrows, and colours "risk up" green. The helper puts the real change in
+place of the arrows, **Risk +15 · Rewards +50** (or HIGHER / LOWER / SAME), coloured the right way round, and adds
+one line of decision help: **★ Take it: no downside**, **Trade-off: more loot, riskier (risk 20→35)** or
+**✕ Skip: riskier, no gain**. The popup stays fully visible inside the event panel.
 
 You also see a mission's exact risk score, e.g. **MODERATE (52)**, and each mercenary's odds, e.g.
 **Death 4% · Fail, survives 12%**.
