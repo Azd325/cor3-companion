@@ -129,7 +129,8 @@ revealed the options shrink, until one turns green with **MATCH**: that's the an
 <img src="store/screenshots/5-inventory.png" alt="Inventory with sell prices, rarity borders and the stash value" width="640">
 
 Every item gets its sell price in the corner (**12k cr**) and a border in its rarity colour. A line on top shows
-your stash's total value and the slots used. Hover a stack's price to see the whole stack's value.
+your stash's total value and the slots used. Prices stay short (**1.1k cr**) so the game's stack count stays
+visible; hover one for the exact price and a stack's whole value.
 
 Items you can hand in for the personal drone (Expeditions > Personal drone assembling) get a small tag above the
 price that counts them: with 4 Circuit components needed, they say **1/4**, **2/4**, **3/4**, **4/4** (green),
