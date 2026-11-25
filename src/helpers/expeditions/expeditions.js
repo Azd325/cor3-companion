@@ -321,8 +321,9 @@
       c.left >= 0 && c.top >= 0 && c.left + width <= window.innerWidth && c.top + height <= window.innerHeight &&
       clearOfGame(c) && !siblings.some((r) => hits(c, r));
     const spot = candidates.find(fits) || candidates.slice(2).find(clearOfGame) || candidates[2];
-    note.style.left = `${Math.round(spot.left)}px`;
-    note.style.top = `${Math.round(spot.top)}px`;
+    const top = Math.max(margin, Math.min(spot.top, window.innerHeight - margin - height));
+    note.style.left = `${Math.round(clampLeft(spot.left))}px`;
+    note.style.top = `${Math.round(top)}px`;
   }
 
   function annotatePopups() {
