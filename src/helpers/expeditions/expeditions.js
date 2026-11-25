@@ -51,6 +51,7 @@
       for (const el of document.querySelectorAll("[data-cor3-exp-popup]")) {
         el.style.flexWrap = el.getAttribute("data-cor3-exp-popup");
         el.removeAttribute("data-cor3-exp-popup");
+        restoreFit(el);
       }
     }
     else run();
@@ -286,6 +287,69 @@
     return null;
   }
 
+  // Our lines make the popup taller, and the game's event panel cuts off what
+  // sticks out of it. Widen the popup a little so the lines wrap less, then
+  // keep it inside the panel: below the option when it doesn't fit above,
+  // else moved down just enough. Uses the separate "translate" property so the
+  // game's own transform stays as it is.
+  const FIT_STYLES = ["translate", "minWidth", "pointerEvents", "zIndex"];
+  function restoreFit(popup) {
+    if (!popup.hasAttribute("data-cor3-exp-fit")) return;
+    const was = JSON.parse(popup.getAttribute("data-cor3-exp-fit"));
+    for (const k of FIT_STYLES) popup.style[k] = was[k] || "";
+    popup.removeAttribute("data-cor3-exp-fit");
+  }
+  // The part of the screen the popup can show in: the window, cut down by every
+  // parent that hides what overflows it.
+  function visibleArea(el) {
+    const area = { top: 0, left: 0, right: window.innerWidth, bottom: window.innerHeight };
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      const cs = getComputedStyle(p);
+      if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
+      const r = p.getBoundingClientRect();
+      if (cs.overflowY !== "visible") { area.top = Math.max(area.top, r.top); area.bottom = Math.min(area.bottom, r.bottom); }
+      if (cs.overflowX !== "visible") { area.left = Math.max(area.left, r.left); area.right = Math.min(area.right, r.right); }
+    }
+    return area;
+  }
+  const PAD = 4;
+  function fit(popup, anchor) {
+    if (!popup.hasAttribute("data-cor3-exp-fit")) {
+      const was = {};
+      for (const k of FIT_STYLES) was[k] = popup.style[k];
+      popup.setAttribute("data-cor3-exp-fit", JSON.stringify(was));
+      popup.style.minWidth = "16em";
+      popup.style.zIndex = "1000";
+    }
+    // Measure where the game puts it, then move it from there.
+    popup.style.translate = "";
+    popup.style.pointerEvents = JSON.parse(popup.getAttribute("data-cor3-exp-fit")).pointerEvents || "";
+    const box = popup.getBoundingClientRect();
+    if (!box.width || !box.height) return;
+    const area = visibleArea(popup);
+    let dx = 0, dy = 0;
+    // Only move what is cut off; then leave a small margin.
+    if (box.right > area.right) dx = area.right - PAD - box.right;
+    if (box.left + dx < area.left) dx = area.left + PAD - box.left;
+    if (box.top < area.top || box.bottom > area.bottom) {
+      const at = anchor && anchor.getBoundingClientRect();
+      const space = at ? Math.max(PAD, at.top - box.bottom) : PAD;
+      if (at && box.bottom <= at.top + 1 && at.bottom + space + box.height <= area.bottom - PAD) {
+        dy = at.bottom + space - box.top; // flip under the option
+      } else if (at && box.top >= at.bottom - 1 && at.top - space - box.height >= area.top + PAD) {
+        dy = at.top - space - box.bottom; // flip over the option
+      } else {
+        dy = Math.min(area.bottom - PAD - box.bottom, Math.max(0, area.top + PAD - box.top));
+        if (box.top + dy < area.top + PAD) dy = area.top + PAD - box.top;
+      }
+    }
+    if (dx || dy) popup.style.translate = `${Math.round(dx)}px ${Math.round(dy)}px`;
+    // Moved over the option it describes: let the pointer through, so the
+    // option keeps its hover and the popup doesn't flicker.
+    const now = popup.getBoundingClientRect();
+    if (dy && anchor && gap(now, anchor.getBoundingClientRect()) === 0) popup.style.pointerEvents = "none";
+  }
+
   function unmark(popup) {
     const v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
     if (v) v.remove();
@@ -293,6 +357,7 @@
       popup.style.flexWrap = popup.getAttribute(POPUP_ATTR);
       popup.removeAttribute(POPUP_ATTR);
     }
+    restoreFit(popup);
   }
 
   function annotatePopups() {
@@ -353,6 +418,8 @@
       const more = detail(b);
       if (sub.textContent !== more) sub.textContent = more;
       sub.style.display = more ? "" : "none";
+      // Kept clear of the hovered option it describes (unless it sits inside one).
+      fit(popup, inside ? null : hovered && hovered.closest(`${OPTIONS_SEL} > *`));
     }
   }
 

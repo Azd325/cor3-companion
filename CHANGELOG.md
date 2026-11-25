@@ -13,6 +13,8 @@ and uses it as the release notes. Leave out headings that have nothing under the
 ### Fixed
 
 - The protocol hint follows the guesses you already submitted.
+- The expedition choice popup is no longer cut off at the top of the event panel. It is a little wider, and
+  moves below the option when there is no room above it.
 
 ## 1.4.2 (2026-11-24)
 
