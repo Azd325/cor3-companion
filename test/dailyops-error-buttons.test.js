@@ -1,27 +1,40 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import test from "node:test";
-import { fileURLToPath } from "node:url";
-import { createContext, runInContext } from "node:vm";
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const { readFileSync } = require("node:fs");
+const { join } = require("node:path");
+const vm = require("node:vm");
 
-const file = join(dirname(fileURLToPath(import.meta.url)), "../src/helpers/dailyops/dailyops.js");
-const window = {
-  __cor3: {
-    load: () => ({ enabled: false }),
-    save() {},
-    color: {},
-    esc: (s) => s,
-    helper() {},
-    every() {},
-  },
-};
-const context = createContext({
-  window,
-  document: { querySelector() {}, querySelectorAll: () => [] },
-});
-runInContext(readFileSync(file, "utf8"), context, { filename: file });
-const mark = (codes, texts) => [...window.__cor3DailyOps.errorButtonIndexes(codes, texts)];
+const root = join(__dirname, "..");
+
+function loadDailyOps() {
+  const window = {
+    __cor3: {
+      load: () => ({ enabled: false }),
+      save() {},
+      color: {},
+      esc: (s) => s,
+      helper() {},
+      every() {},
+    },
+    document: {
+      querySelector() {},
+      querySelectorAll: () => [],
+    },
+  };
+  window.window = window;
+  vm.runInNewContext(
+    readFileSync(join(root, "src/helpers/dailyops/dailyops.js"), "utf8"),
+    window,
+    { filename: "dailyops.js" },
+  );
+  return window.__cor3DailyOps;
+}
+
+const { errorButtonIndexes } = loadDailyOps();
+
+function mark(codes, texts) {
+  return [...errorButtonIndexes(codes, texts)];
+}
 
 const english = [
   "Time format is incorrect",
