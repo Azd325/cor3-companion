@@ -141,7 +141,7 @@ send it; every option of a stage counts, so you may need fewer if you pay credit
 
 ## Protocol solver
 
-In the cleaner-bot protocol minigame, one line above the fields tells you the best move to play next
+In the cleaner-bot protocol minigame, one line at the bottom of the log tells you the best move to play next
 (**NEXT v1.0 · PUT · Fiber · RSA**), with the fields you still have to change outlined, how many combinations are
 still possible, and the **ANSWER** in green once only one is left. With 6 attempts it always wins.
 
