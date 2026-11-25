@@ -202,7 +202,7 @@
   document.addEventListener("mouseover", (e) => {
     const t = e.target;
     if (optionOf(t)) hovered = t;
-    else if (!(t && t.closest && t.closest(`[${POPUP_ATTR}]`))) hovered = null;
+    else if (!(t && t.closest && t.closest(`[${POPUP_ATTR}], [data-cor3-exp-fit]`))) hovered = null;
   }, true);
   // Gap in px between two boxes (0 when they touch or overlap).
   const gap = (a, b) => Math.hypot(Math.max(0, a.left - b.right, b.left - a.right),
@@ -284,17 +284,69 @@
     return null;
   }
 
-  // Our line makes the popup taller, and the game's event panel cuts off what
-  // sticks out of it. Size the popup to its content, then keep it inside the
+  // The game draws its tooltip box as an SVG of a fixed size (InfoTooltipBg), so
+  // our line ran out of it, and the event panel cut off what stuck out. Redraw
+  // the box at the size of its content, then keep the whole tooltip inside the
   // panel: below the option when it doesn't fit above, else moved down just
-  // enough. Uses the separate "translate" property so the
-  // game's own transform stays as it is.
+  // enough. Uses the separate "translate" property so the game's own transform
+  // stays as it is. All of it is undone when the popup closes or the helper is off.
+  const FIT = "data-cor3-exp-fit";
   const FIT_STYLES = ["translate", "minWidth", "height", "maxHeight", "pointerEvents", "zIndex"];
+  const tipOf = (popup) => popup.closest('[data-component-name="InfoTooltipPopup"], [role="tooltip"]') || popup;
+  const bgOf = (tip) => tip.querySelector('[data-component-name="InfoTooltipBg"] svg');
   function restoreFit(popup) {
-    if (!popup.hasAttribute("data-cor3-exp-fit")) return;
-    const was = JSON.parse(popup.getAttribute("data-cor3-exp-fit"));
-    for (const k of FIT_STYLES) popup.style[k] = was[k] || "";
-    popup.removeAttribute("data-cor3-exp-fit");
+    popup.style.minWidth = "";
+    const tip = tipOf(popup);
+    if (!tip.hasAttribute(FIT)) return;
+    const was = JSON.parse(tip.getAttribute(FIT));
+    for (const k of FIT_STYLES) tip.style[k] = was.style[k] || "";
+    const svg = bgOf(tip), path = svg && svg.querySelector("path");
+    if (svg && was.svg) {
+      for (const [k, v] of Object.entries(was.svg)) v == null ? svg.removeAttribute(k) : svg.setAttribute(k, v);
+      if (path && was.d) path.setAttribute("d", was.d);
+      svg.parentElement.style.width = was.bgW || "";
+      svg.parentElement.style.height = was.bgH || "";
+    }
+    tip.removeAttribute(FIT);
+  }
+  // The box's outline for a new size: points in its right half move with the
+  // width, points in its bottom half with the height, so the corners keep their shape.
+  function stretchPath(d, w0, h0, dw, dh) {
+    let cmd = "", i = 0;
+    return d.replace(/([A-Za-z])|(-?\d*\.?\d+(?:e-?\d+)?)/g, (m, c, n) => {
+      if (c) { cmd = c; i = 0; return c; }
+      const v = parseFloat(n);
+      const isX = cmd === "H" ? true : cmd === "V" ? false : i % 2 === 0;
+      i++;
+      if (cmd === cmd.toLowerCase()) return n; // relative moves keep their size
+      return String(+(isX ? (v > w0 / 2 ? v + dw : v) : (v > h0 / 2 ? v + dh : v)).toFixed(2));
+    });
+  }
+  function redrawBox(tip, popup) {
+    const svg = bgOf(tip), path = svg && svg.querySelector("path");
+    if (!svg || !path) return;
+    const was = JSON.parse(tip.getAttribute(FIT));
+    if (!was.svg) {
+      was.svg = { width: svg.getAttribute("width"), height: svg.getAttribute("height"), viewBox: svg.getAttribute("viewBox") };
+      was.d = path.getAttribute("d");
+      was.bgW = svg.parentElement.style.width;
+      was.bgH = svg.parentElement.style.height;
+      tip.setAttribute(FIT, JSON.stringify(was));
+    }
+    const w0 = parseFloat(was.svg.width), h0 = parseFloat(was.svg.height);
+    if (!(w0 > 0 && h0 > 0)) return;
+    // The content plus the same margin the game left around its own row.
+    const t = tip.getBoundingClientRect(), c = popup.getBoundingClientRect();
+    const m = Math.max(0, c.left - t.left);
+    const w = Math.ceil(Math.max(w0, c.right - t.left + m));
+    const h = Math.ceil(Math.max(h0, c.bottom - t.top + m));
+    if (svg.getAttribute("width") === String(w) && svg.getAttribute("height") === String(h)) return;
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    path.setAttribute("d", stretchPath(was.d, w0, h0, w - w0, h - h0));
+    svg.parentElement.style.width = `${w}px`;
+    svg.parentElement.style.height = `${h}px`;
   }
   // The part of the screen the popup can show in: the window, cut down by every
   // parent that hides what overflows it.
@@ -310,27 +362,39 @@
     return area;
   }
   const PAD = 4;
+  // Bounding box of the tooltip, including content that runs past it.
+  function boxOf(tip) {
+    const b = tip.getBoundingClientRect();
+    const svg = bgOf(tip);
+    if (!svg) return b;
+    const s = svg.getBoundingClientRect();
+    const top = Math.min(b.top, s.top), left = Math.min(b.left, s.left);
+    const right = Math.max(b.right, s.right), bottom = Math.max(b.bottom, s.bottom);
+    return { top, left, right, bottom, width: right - left, height: bottom - top };
+  }
   function fit(popup, anchor, line) {
-    if (!popup.hasAttribute("data-cor3-exp-fit")) {
-      const was = {};
-      for (const k of FIT_STYLES) was[k] = popup.style[k];
-      popup.setAttribute("data-cor3-exp-fit", JSON.stringify(was));
+    const tip = tipOf(popup);
+    if (!tip.hasAttribute(FIT)) {
+      const style = {};
+      for (const k of FIT_STYLES) style[k] = tip.style[k];
+      tip.setAttribute(FIT, JSON.stringify({ style }));
       // As tall as its content (the game sizes it for its own row).
-      popup.style.height = "auto";
-      popup.style.maxHeight = "none";
-      popup.style.zIndex = "1000";
+      tip.style.height = "auto";
+      tip.style.maxHeight = "none";
+      tip.style.zIndex = "1000";
     }
     // Measure where the game puts it, then move it from there.
-    const was = JSON.parse(popup.getAttribute("data-cor3-exp-fit"));
-    popup.style.translate = "";
-    popup.style.pointerEvents = was.pointerEvents || "";
+    const was = JSON.parse(tip.getAttribute(FIT)).style;
+    tip.style.translate = "";
+    tip.style.pointerEvents = was.pointerEvents || "";
     // Wide enough for the help line on one line.
-    popup.style.minWidth = was.minWidth || "";
+    popup.style.minWidth = "";
     const more = line.scrollWidth - line.clientWidth;
     if (more > 0) popup.style.minWidth = `${popup.offsetWidth + more}px`;
-    const box = popup.getBoundingClientRect();
+    redrawBox(tip, popup);
+    const box = boxOf(tip);
     if (!box.width || !box.height) return;
-    const area = visibleArea(popup);
+    const area = visibleArea(tip);
     let dx = 0, dy = 0;
     // Only move what is cut off; then leave a small margin.
     if (box.right > area.right) dx = area.right - PAD - box.right;
@@ -338,20 +402,20 @@
     if (box.top < area.top || box.bottom > area.bottom) {
       const at = anchor && anchor.getBoundingClientRect();
       const space = at ? Math.max(PAD, at.top - box.bottom) : PAD;
-      if (at && box.bottom <= at.top + 1 && at.bottom + space + box.height <= area.bottom - PAD) {
+      const above = at && (box.top + box.bottom) / 2 < at.top;
+      if (above && at.bottom + space + box.height <= area.bottom - PAD) {
         dy = at.bottom + space - box.top; // flip under the option
-      } else if (at && box.top >= at.bottom - 1 && at.top - space - box.height >= area.top + PAD) {
+      } else if (at && !above && at.top - space - box.height >= area.top + PAD) {
         dy = at.top - space - box.bottom; // flip over the option
       } else {
         dy = Math.min(area.bottom - PAD - box.bottom, Math.max(0, area.top + PAD - box.top));
         if (box.top + dy < area.top + PAD) dy = area.top + PAD - box.top;
       }
     }
-    if (dx || dy) popup.style.translate = `${Math.round(dx)}px ${Math.round(dy)}px`;
+    if (dx || dy) tip.style.translate = `${Math.round(dx)}px ${Math.round(dy)}px`;
     // Moved over the option it describes: let the pointer through, so the
     // option keeps its hover and the popup doesn't flicker.
-    const now = popup.getBoundingClientRect();
-    if (dy && anchor && gap(now, anchor.getBoundingClientRect()) === 0) popup.style.pointerEvents = "none";
+    if (dy && anchor && gap(boxOf(tip), anchor.getBoundingClientRect()) === 0) tip.style.pointerEvents = "none";
   }
 
   function unmark(popup) {
