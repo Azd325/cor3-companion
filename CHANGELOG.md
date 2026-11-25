@@ -13,6 +13,7 @@ and uses it as the release notes. Leave out headings that have nothing under the
 ### Fixed
 
 - The protocol hint follows the guesses you already submitted.
+- The protocol hint no longer disappears after your second guess, when the log repeats each guess as "Input: … Result: …".
 
 ## 1.4.2 (2026-11-24)
 
