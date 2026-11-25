@@ -89,3 +89,77 @@ test("old one-line Input and Result still records the guess", () => {
   assert.equal(history[0].mismatched, 2);
   assert.equal(history[0].values.join(" "), "v1.0 GET LTE AES");
 });
+
+test("the Input/Result echo of a guess is not a second attempt", () => {
+  const { readLog } = loadProtocol();
+  const split = readLog(logOf([
+    ...FIELDS,
+    "Attempts: 3 | Time: 120s",
+    "> v1.0 GET LTE AES",
+    "Mismatched 3",
+    "attempts left == 2",
+    "Input: v1.0 GET LTE AES",
+    "Result:",
+    "Mismatched 3",
+    "attempts left == 2",
+    "> v1.0 PUT Fiber RSA",
+    "Mismatched 1",
+    "attempts left == 1",
+    "Input: v1.0 PUT Fiber RSA",
+    "Result:",
+    "Mismatched 1",
+    "attempts left == 1",
+  ]));
+  assert.equal(split.limit, 3);
+  assert.equal(JSON.stringify(split.history.map((h) => [h.values.join(" "), h.mismatched])),
+    JSON.stringify([["v1.0 GET LTE AES", 3], ["v1.0 PUT Fiber RSA", 1]]));
+
+  const joined = readLog(logOf([
+    ...FIELDS,
+    "Attempts: 3 | Time: 120s",
+    "> v1.0 PUT Fiber RSA",
+    "Mismatched 1",
+    "attempts left == 2",
+    "Input: v1.0 PUT Fiber RSAResult:Mismatched 1attempts left == 2",
+  ]));
+  assert.equal(joined.history.length, 1);
+});
+
+test("a hint is still shown after two guesses out of three", () => {
+  const { readLog, makeSolver } = loadProtocol();
+  const { fields, history, limit } = readLog(logOf([
+    ...FIELDS,
+    "Attempts: 3 | Time: 120s",
+    "> v1.0 GET LTE AES", "Mismatched 3", "attempts left == 2",
+    "Input: v1.0 GET LTE AES", "Result:", "Mismatched 3", "attempts left == 2",
+    "> v1.0 PUT Fiber RSA", "Mismatched 1", "attempts left == 1",
+    "Input: v1.0 PUT Fiber RSA", "Result:", "Mismatched 1", "attempts left == 1",
+  ]));
+  const solver = makeSolver(fields.map((f) => f.length));
+  const hist = history.map((h) => {
+    const idx = h.values.map((v, f) => fields[f].indexOf(v));
+    return { guess: solver.combos.findIndex((c) => c.every((v, f) => v === idx[f])), mismatched: h.mismatched };
+  });
+  const res = solver.solve(hist, limit);
+  assert.equal(res.left, 1);
+  assert.ok(res.cands.length > 0);
+  assert.ok(res.move);
+});
+
+test("split Input and Result lines on their own still count once", () => {
+  const { readLog } = loadProtocol();
+  const { history } = readLog(logOf([
+    ...FIELDS,
+    "Attempts: 6 | Time: 120s",
+    "Input: v1.0 GET LTE AES", "Result:", "Mismatched 2", "attempts left == 5",
+  ]));
+  assert.equal(history.length, 1);
+  assert.equal(history[0].mismatched, 2);
+});
+
+test("attempts left comes from the game's own line after the last guess", () => {
+  const { readLog } = loadProtocol();
+  const base = [...FIELDS, "Attempts: 4 | Time: 120s", "> v1.0 GET LTE AES", "Mismatched 3"];
+  assert.equal(readLog(logOf(base)).left, null);
+  assert.equal(readLog(logOf([...base, "attempts left == 3"])).left, 3);
+});

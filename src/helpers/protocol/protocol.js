@@ -99,29 +99,47 @@
 
   // "→ v1.0 / v1.1 / v2.0" per field, "Attempts: N | Time: …", then "> guess"
   // and "Mismatched N" or "Matched". Older logs use one "Input: … Result: Mismatched N" line.
+  // Newer logs echo each "> guess" block as "Input: guess / Result: / Mismatched N",
+  // on one line or split over several; that echo is the same attempt, not a new one.
   function readLog(log) {
     // Only innermost divs, so a wrapper's text never counts an attempt twice.
     const lines = [...log.querySelectorAll("div")].filter((d) => !d.querySelector("div") && !d.closest(`.${NOTE_CLASS}`))
       .map((d) => d.textContent.trim()).filter(Boolean);
     const fields = [], history = [];
-    let limit = null, pending = null;
+    let limit = null, pending = null, echo = null, left = null;
+    const record = (values, mismatched, fromPrompt) => {
+      history.push({ values, mismatched });
+      echo = fromPrompt ? values.join(" ") : null;
+      pending = null;
+      left = null; // only an "attempts left" after the latest attempt counts
+    };
     for (const line of lines) {
-      const inp = line.match(/^Input:\s*(.+?)\s*Result:\s*Mismatched\s*(\d+)/is);
-      if (inp) { history.push({ values: inp[1].trim().split(/\s+/), mismatched: Number(inp[2]) }); pending = null; continue; }
+      const inp = line.match(/^Input:\s*(.+?)\s*(?:Result:\s*(?:(Mismatched)\s*(\d+)|(Matched)\b)?|$)/is);
+      if (inp) {
+        const values = inp[1].trim().split(/\s+/);
+        const isEcho = echo === values.join(" ");
+        echo = null;
+        pending = null;
+        if (isEcho) continue;
+        if (inp[2]) record(values, Number(inp[3]), false);
+        else if (inp[4]) record(values, 0, false);
+        else pending = values; // result follows on its own line
+        continue;
+      }
+      if (/^Result:?$/i.test(line)) continue;
       const guess = line.match(/^>\s*(.+)$/);
-      if (guess) { pending = guess[1].trim().split(/\s+/); continue; }
+      if (guess) { pending = guess[1].trim().split(/\s+/); pending.prompt = true; echo = null; continue; }
       const mis = line.match(/^Mismatched\s+(\d+)$/i);
       if (mis) {
-        if (pending) history.push({ values: pending, mismatched: Number(mis[1]) });
-        pending = null;
+        if (pending) record(pending, Number(mis[1]), pending.prompt);
         continue;
       }
       if (/^Matched$/i.test(line)) {
-        if (pending) history.push({ values: pending, mismatched: 0 });
-        pending = null;
+        if (pending) record(pending, 0, pending.prompt);
         continue;
       }
-      if (/^attempts left\s*==/i.test(line)) continue;
+      const al = line.match(/^attempts left\s*==\s*(\d+)/i);
+      if (al) { left = Number(al[1]); continue; }
       const opt = line.match(/→\s*(.+)/);
       if (opt) {
         const f = opt[1].split("/").map((s) => s.trim()).filter(Boolean);
@@ -132,7 +150,7 @@
       const att = line.match(/^Attempts:\s*(\d+)(?:\s*\/\s*(\d+))?/i);
       if (att && limit == null) limit = Number(att[2] || att[1]);
     }
-    return { fields, history, limit };
+    return { fields, history, limit, left };
   }
 
   // The four field buttons and the value each shows now.
@@ -181,7 +199,7 @@
     if (key === lastKey) return;
     lastKey = key;
 
-    const { fields, history, limit } = readLog(log);
+    const { fields, history, limit, left } = readLog(log);
     if (fields.length < 2) return;
     const s = solverFor(fields);
     const hist = [];
@@ -190,7 +208,9 @@
       if (idx.length !== fields.length || idx.includes(-1)) continue;
       hist.push({ guess: s.combos.findIndex((c) => c.every((v, f) => v === idx[f])), mismatched: h.mismatched });
     }
-    const total = limit || 6;
+    // The game's own "attempts left" wins over our count, so a line we read
+    // twice can never use up attempts the player still has.
+    const total = left != null ? hist.length + left : limit || 6;
     const res = s.solve(hist, Math.max(total, hist.length));
     if (text !== lastLog) {
       lastLog = text;
