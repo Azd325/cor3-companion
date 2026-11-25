@@ -95,7 +95,10 @@
   }
   const price = (it) => (it.canSell !== false && typeof it.sellPrice === "number" && it.sellPrice > 0 ? it.sellPrice : 0);
   const qty = (it) => (typeof it.quantity === "number" && it.quantity > 1 ? it.quantity : 1);
-  const fmt = (n) => (n >= 1e6 ? `${Math.round(n / 1e5) / 10}M` : n >= 1e4 ? `${Math.round(n / 100) / 10}k` : n.toLocaleString());
+  // Short enough to stay on one line in a stash cell (1.1k, 12k, 1.2M), so the
+  // game's stack count above it stays in view; the exact price is in the tooltip.
+  const fmt = (n) => (n >= 999500 ? `${Math.round(n / 1e5) / 10}M` : n >= 1e4 ? `${Math.round(n / 1e3)}k`
+    : n >= 1e3 ? `${Math.round(n / 100) / 10}k` : String(n));
 
   // ---------- drone parts ----------
   // How many of each drone part the stash holds, by name.
@@ -188,7 +191,8 @@
           tag = document.createElement("div");
           tag.className = PRICE_CLASS;
           tag.style.cssText = "position:absolute;right:2px;bottom:2px;z-index:2;padding:0 3px;border-radius:3px;" +
-            "background:rgba(8,16,22,.85);font:700 10px/14px ui-monospace,Consolas,monospace;pointer-events:none";
+            "background:rgba(8,16,22,.85);font:700 10px/14px ui-monospace,Consolas,monospace;pointer-events:none;" +
+            "white-space:nowrap;max-width:calc(100% - 4px);overflow:hidden;text-overflow:clip";
           if (getComputedStyle(el).position === "static") el.style.position = "relative";
           el.appendChild(tag);
         }
