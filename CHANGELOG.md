@@ -10,6 +10,12 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+### Fixed
+
+- The expedition choice popup no longer covers a choice or gets cut off by the event panel. The decision help
+  (★ Take it, Trade-off, ✕ Skip) now sits under the choice buttons, one line per choice, so you can compare them
+  without hovering. The popup keeps the game's own size, with the numbers in place of its arrows.
+
 ## 1.4.3 (2026-11-25)
 
 ### New
