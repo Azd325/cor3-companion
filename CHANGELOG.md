@@ -20,6 +20,7 @@ and uses it as the release notes. Leave out headings that have nothing under the
 - The protocol hint follows the guesses you already submitted.
 - The expedition choice popup is no longer cut off by the event panel, and its box grows to fit the notes. It
   moves below the option when there is no room above it.
+- Stash prices stay on one line (1.1k cr), so they no longer push the game's stack count (1/3) out of view.
 
 ## 1.4.2 (2026-11-24)
 
