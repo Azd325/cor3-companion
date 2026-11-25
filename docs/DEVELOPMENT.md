@@ -14,6 +14,7 @@ src/
     bridge.js            extension side of the same (isolated world)
     msgpack.js           decoder for the game's websocket frames
     socket.js            read-only websocket hook; hands packets to window.__cor3.onPacket
+    copy-id.js           copy button next to your player ID on the profile card (always on)
   helpers/
     icewall/  protocol/  dailyops/  jobs/  loadout/  expeditions/  inventory/  lighter/  topbar/
   popup/                 toolbar menu (popup.html, popup.js, update-check.js)
@@ -39,6 +40,7 @@ A new helper:
 |---|---|
 | `onPacket(fn)` | every decoded websocket packet (socket.js hooks the socket once for everyone) |
 | `onDom(fn, gapMs?)` | runs `fn` soon after the game changes the page; one shared observer, ignores our own `cor3-…` nodes, skips hidden tabs. Use it instead of polling the page on a timer |
+| `copyText(text)` | copy to the clipboard (with a fallback for pages that block it); resolves `true` or `false` |
 | `every(ms, fn, tag)` | a timer that skips while the tab is hidden; only for countdowns and the minigame boards |
 | `emit(topic)` / `on(topic, fn)` | tell other helpers your data changed (`jobs`, `expeditions`, `health`); the top bar redraws at once |
 | `cache(key, maxAgeMs)` | game data kept between visits: `{ data, at, put(data) }`. Bump `CACHE_V` in core.js when a cached layout changes |

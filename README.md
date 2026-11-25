@@ -171,6 +171,11 @@ alone. Off until you switch it on; switching it off puts everything back.
 When your browser is drawing the game without the graphics card, the top bar offers it once:
 **Game slow? Lite mode**. Click it to switch on, or **×** to hide the offer.
 
+## Player ID
+
+A small copy button next to your FREEL ID on the profile card copies the whole ID, even the part the card
+cuts off with "…". It's always there and needs no switch.
+
 ## Fair play and privacy
 
 - It only reads what the game already sends to your browser, and it **never sends anything to the game**.

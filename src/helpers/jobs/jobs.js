@@ -262,20 +262,7 @@
     return true;
   }
 
-  // Clipboard API first; the old execCommand route if the page doesn't allow it.
-  async function copyText(text) {
-    try { await navigator.clipboard.writeText(text); return true; } catch {}
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.cssText = "position:fixed;left:-9999px;opacity:0";
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand("copy");
-      ta.remove();
-      return ok;
-    } catch { return false; }
-  }
+  const copyText = (text) => window.__cor3.copyText(text);
 
   function timeLeft(job) {
     if (!job.endTime) return "";

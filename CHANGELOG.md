@@ -10,6 +10,11 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+### New
+
+- **Copy your player ID.** A small copy button sits next to your FREEL ID on the profile card and copies the
+  whole ID, even the part the card cuts off.
+
 ### Fixed
 
 - The protocol hint follows the guesses you already submitted.

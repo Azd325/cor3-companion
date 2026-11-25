@@ -135,6 +135,21 @@
       domFns.push({ fn, gap: gapMs || 0, last: 0, timer: 0 });
       watchDom();
     },
+    // Copy text to the clipboard: the Clipboard API first, the old
+    // execCommand route if the page doesn't allow it. Resolves true or false.
+    async copyText(text) {
+      try { await navigator.clipboard.writeText(text); return true; } catch (_) {}
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.cssText = "position:fixed;left:-9999px;opacity:0";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        ta.remove();
+        return ok;
+      } catch (_) { return false; }
+    },
     // A timer that skips while the tab is hidden and keeps going after an error.
     every(ms, fn, tag) {
       return setInterval(() => {
