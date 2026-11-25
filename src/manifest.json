@@ -58,7 +58,8 @@
         "helpers/inventory/drone.js",
         "helpers/inventory/inventory.js",
         "helpers/lighter/lighter.js",
-        "helpers/topbar/topbar.js"
+        "helpers/topbar/topbar.js",
+        "shared/copy-id.js"
       ],
       "run_at": "document_idle",
       "world": "MAIN"
