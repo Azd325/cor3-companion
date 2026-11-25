@@ -10,6 +10,8 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+## 1.4.3 (2026-11-25)
+
 ### New
 
 - **Copy your player ID.** A small copy button sits next to your FREEL ID on the profile card and copies the
