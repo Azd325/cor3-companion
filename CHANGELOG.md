@@ -10,11 +10,16 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+### Improved
+
+- **Shorter expedition choice popup.** The numbers (Risk +15, Rewards +50) now replace the game's arrow boxes, with
+  one line of decision help under them. The time left to decide is in the top bar.
+
 ### Fixed
 
 - The protocol hint follows the guesses you already submitted.
-- The expedition choice popup is no longer cut off at the top of the event panel. It is a little wider, and
-  moves below the option when there is no room above it.
+- The expedition choice popup is no longer cut off by the event panel. It moves below the option when there is
+  no room above it.
 
 ## 1.4.2 (2026-11-24)
 

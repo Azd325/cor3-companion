@@ -1,10 +1,9 @@
 // COR3 expeditions helper.
-// - Makes the game's hover popup on decision options clear: under the game's
-//   own row it adds a line "Risk HIGHER · Rewards MORE" (or LOWER / LESS / SAME)
-//   in the right colour (the game colours "risk up" green), and a one-line verdict.
-// - With the expedition data the game sends (read through the websocket hook in
-//   shared/socket.js) it adds the exact numbers: Risk HIGHER +8, the mission risk after
-//   the choice, and the time left to decide.
+// - Makes the game's hover popup on decision options clear: in the game's row the
+//   arrow boxes become the change, coloured the right way round (the game colours
+//   "risk up" green): exact numbers like Risk +15 from the expedition data the game
+//   sends (websocket hook in shared/socket.js), else HIGHER / LOWER / SAME. Under
+//   it one line of decision help, with the mission risk after the choice.
 // - Adds the exact risk score (0-100) next to LOW / MODERATE / HIGH.
 // - Shows death and fail chance on the mercenary cards once the game has priced
 //   that mercenary.
@@ -19,25 +18,29 @@
   const AMBER = "#ffc966";
   const OPTIONS_SEL = '[data-component-name="ExpeditionsEventButtons"]';
   const VERDICT_CLASS = "cor3-exp-verdict";
-  const MINE = `.${VERDICT_CLASS}, .${SCORE_CLASS}, .cor3-exp-odds`;
+  const NUM_CLASS = "cor3-exp-num";
+  const MINE = `.${VERDICT_CLASS}, .${SCORE_CLASS}, .cor3-exp-odds, .${NUM_CLASS}`;
 
   const RISK_WORD = { up: ["HIGHER", RED], down: ["LOWER", GREEN], no_change: ["SAME", GREY] };
   const LOOT_WORD = { up: ["MORE", GREEN], down: ["LESS", RED], no_change: ["SAME", GREY] };
 
-  // One line that sums up the option.
+  // One line of decision help. The numbers sit in the game's own row, so this
+  // says what to do, plus the mission risk after the choice when it changes.
   function verdict(b) {
     const r = b.riskChange || "no_change", l = b.lootChange || "no_change";
-    const exact = typeof b.risk === "number" && typeof b.loot === "number";
-    if (r !== "up" && l !== "down" && (r === "down" || l === "up")) return ["★ No downside", GREEN];
-    if (r === "up" && l === "up") {
-      return [exact ? `Trade-off: ${num(b.loot)} loot for ${num(b.risk)} risk` : "Trade-off: more loot, more danger", AMBER];
+    let text, color;
+    if (r !== "up" && l !== "down" && (r === "down" || l === "up")) [text, color] = ["\u2605 Take it: no downside", GREEN];
+    else if (r === "up" && l === "up") [text, color] = ["Trade-off: more loot, riskier", AMBER];
+    else if (r === "down" && l === "down") [text, color] = ["Trade-off: safer, less loot", AMBER];
+    else if (r === "up") [text, color] = ["\u2715 Skip: riskier, no gain", RED];
+    else if (l === "down") [text, color] = ["\u2715 Skip: less loot, no gain", RED];
+    else [text, color] = ["No change", GREY];
+    const score = b.dec && b.dec.riskScore;
+    if (r !== "no_change" && typeof b.risk === "number" && b.risk && typeof score === "number") {
+      const to = Math.max(0, Math.min(100, Math.round(score + b.risk)));
+      text += ` (risk ${Math.round(score)}\u2192${to})`;
     }
-    if (r === "down" && l === "down") {
-      return [exact ? `Trade-off: ${num(b.risk)} risk for ${num(b.loot)} loot` : "Trade-off: safer, less loot", AMBER];
-    }
-    if (r === "up") return ["✕ More danger, nothing gained", RED];
-    if (l === "down") return ["✕ Less loot, nothing gained", RED];
-    return ["No change", GREY];
+    return [text, color];
   }
 
   // ---------- on/off ----------
@@ -52,6 +55,7 @@
         el.style.flexWrap = el.getAttribute("data-cor3-exp-popup");
         el.removeAttribute("data-cor3-exp-popup");
         restoreFit(el);
+        showIcons(el);
       }
     }
     else run();
@@ -187,28 +191,7 @@
     return { ...b, risk: ok ? found.opt.riskModifier : null, loot: ok ? found.opt.lootModifier : null, dec: found ? found.dec : null };
   }
 
-  const band = (x) => (x <= 33 ? "LOW" : x <= 66 ? "MODERATE" : "HIGH");
   const num = (n) => (n > 0 ? `+${n}` : n < 0 ? `\u2212${-n}` : "\u00b10");
-  function timeLeft(v) {
-    const ms = Date.parse(v instanceof Date ? v.toISOString() : v) - Date.now();
-    if (!(ms > 0)) return null;
-    const m = Math.floor(ms / 60000), h = Math.floor(m / 60);
-    return h ? `${h}h ${String(m % 60).padStart(2, "0")}m` : m ? `${m}m` : "<1m";
-  }
-
-  // Lines under the verdict: mission risk after the choice, time to decide.
-  function detail(b) {
-    const parts = [];
-    const score = b.dec && b.dec.riskScore;
-    if (typeof b.risk === "number" && typeof score === "number") {
-      const to = Math.max(0, Math.min(100, Math.round(score + b.risk)));
-      const from = Math.round(score);
-      parts.push(`Mission risk ${from} \u2192 ${to}${band(to) !== band(from) ? ` (now ${band(to)})` : ""}`);
-    }
-    const left = b.dec && !b.dec.isResolved && timeLeft(b.dec.deadline);
-    if (left) parts.push(`${left} to decide`);
-    return parts.join("\n");
-  }
 
   // The game's popup is not inside the option, so remember the hovered one.
   // Only while the pointer is on that option or on the popup we marked: other
@@ -261,24 +244,38 @@
     return out;
   }
 
-  // "Risk HIGHER +8 · Rewards MORE +3", coloured, on its own line. Kept out of
-  // the game's label row: written in there it overlapped the labels.
-  function setWords(line, b) {
-    const withNum = (w, n) => `${w[0]}${typeof n === "number" && n !== 0 ? ` ${num(n)}` : ""}`;
-    const parts = [["Risk", RISK_WORD[b.riskChange], b.risk], ["Rewards", LOOT_WORD[b.lootChange], b.loot]]
-      .filter(([, w]) => w);
-    const key = JSON.stringify(parts.map(([l, w, n]) => [l, withNum(w, n)]));
-    if (line.dataset.key === key) return;
-    line.dataset.key = key;
-    line.textContent = "";
-    parts.forEach(([label, w, n], i) => {
-      if (i) line.append(" \u00b7 ");
-      const word = document.createElement("span");
-      word.style.cssText = `color:${w[1]};font-weight:700`;
-      word.textContent = withNum(w, n);
-      line.append(`${label} `, word);
-    });
-    line.style.display = parts.length ? "" : "none";
+  // The number (or HIGHER / LOWER when the game sent none) goes in the game's
+  // row in place of its arrow box, coloured the right way round.
+  const HID = "data-cor3-exp-hid";
+  function setNumber(popup, label, word, n) {
+    // The label's own item in the row: the child of the popup that holds it.
+    let item = label.parentElement;
+    while (item && item.parentElement !== popup && item !== popup) item = item.parentElement;
+    if (!item) return;
+    // The arrow boxes are the elements without text.
+    for (const el of item.querySelectorAll("*")) {
+      if (el.closest(MINE) || el.hasAttribute(HID) || el.textContent.trim() || el.contains(label)) continue;
+      if (el.parentElement && el.parentElement !== item && !el.parentElement.textContent.trim()) continue;
+      el.setAttribute(HID, el.style.display);
+      el.style.display = "none";
+    }
+    let span = label.nextSibling;
+    if (!(span && span.classList && span.classList.contains(NUM_CLASS))) {
+      span = document.createElement("span");
+      span.className = NUM_CLASS;
+      span.style.cssText = "font-weight:700;margin-left:.4em;white-space:nowrap";
+      label.after(span);
+    }
+    const text = typeof n === "number" && n !== 0 ? num(n) : word[0];
+    if (span.textContent !== text) span.textContent = text;
+    if (span.style.color !== word[1]) span.style.color = word[1];
+  }
+  function showIcons(popup) {
+    for (const el of popup.querySelectorAll(`[${HID}]`)) {
+      el.style.display = el.getAttribute(HID);
+      el.removeAttribute(HID);
+    }
+    for (const el of popup.querySelectorAll(`.${NUM_CLASS}`)) el.remove();
   }
 
   // Smallest element that holds both the risk and the rewards label.
@@ -287,12 +284,12 @@
     return null;
   }
 
-  // Our lines make the popup taller, and the game's event panel cuts off what
-  // sticks out of it. Widen the popup a little so the lines wrap less, then
-  // keep it inside the panel: below the option when it doesn't fit above,
-  // else moved down just enough. Uses the separate "translate" property so the
+  // Our line makes the popup taller, and the game's event panel cuts off what
+  // sticks out of it. Size the popup to its content, then keep it inside the
+  // panel: below the option when it doesn't fit above, else moved down just
+  // enough. Uses the separate "translate" property so the
   // game's own transform stays as it is.
-  const FIT_STYLES = ["translate", "minWidth", "pointerEvents", "zIndex"];
+  const FIT_STYLES = ["translate", "minWidth", "height", "maxHeight", "pointerEvents", "zIndex"];
   function restoreFit(popup) {
     if (!popup.hasAttribute("data-cor3-exp-fit")) return;
     const was = JSON.parse(popup.getAttribute("data-cor3-exp-fit"));
@@ -313,17 +310,24 @@
     return area;
   }
   const PAD = 4;
-  function fit(popup, anchor) {
+  function fit(popup, anchor, line) {
     if (!popup.hasAttribute("data-cor3-exp-fit")) {
       const was = {};
       for (const k of FIT_STYLES) was[k] = popup.style[k];
       popup.setAttribute("data-cor3-exp-fit", JSON.stringify(was));
-      popup.style.minWidth = "16em";
+      // As tall as its content (the game sizes it for its own row).
+      popup.style.height = "auto";
+      popup.style.maxHeight = "none";
       popup.style.zIndex = "1000";
     }
     // Measure where the game puts it, then move it from there.
+    const was = JSON.parse(popup.getAttribute("data-cor3-exp-fit"));
     popup.style.translate = "";
-    popup.style.pointerEvents = JSON.parse(popup.getAttribute("data-cor3-exp-fit")).pointerEvents || "";
+    popup.style.pointerEvents = was.pointerEvents || "";
+    // Wide enough for the help line on one line.
+    popup.style.minWidth = was.minWidth || "";
+    const more = line.scrollWidth - line.clientWidth;
+    if (more > 0) popup.style.minWidth = `${popup.offsetWidth + more}px`;
     const box = popup.getBoundingClientRect();
     if (!box.width || !box.height) return;
     const area = visibleArea(popup);
@@ -358,6 +362,7 @@
       popup.removeAttribute(POPUP_ATTR);
     }
     restoreFit(popup);
+    showIcons(popup);
   }
 
   function annotatePopups() {
@@ -378,13 +383,13 @@
         if (!/^risk(rewards?|loot)$/i.test(ownText(p).replace(/[^a-z]/gi, ""))) continue;
         popup = p; loot = l; break;
       }
-      if (popup) found.push({ popup, b: optionOf(popup) });
+      if (popup) found.push({ popup, b: optionOf(popup), risk: r, loot });
     }
     // Inside an option (narrow windows) use that option, else the hovered one,
     // but only for the popup next to it, with its data as it is now.
     const pick = hoverPopup(found.filter((f) => !f.b).map((f) => f.popup));
     const fromHover = pick && optionOf(hovered);
-    for (const { popup, b: inside } of found) {
+    for (const { popup, b: inside, risk, loot } of found) {
       const b = inside || (popup === pick ? fromHover : null);
       if (!b) { unmark(popup); continue; }
       let v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
@@ -392,9 +397,9 @@
       if (!v) {
         v = document.createElement("div");
         v.className = VERDICT_CLASS;
-        // Wraps inside the game's popup instead of running past its edge.
-        v.style.cssText = "flex-basis:100%;width:100%;min-width:0;box-sizing:border-box;margin-top:6px;padding-top:5px;" +
-          "border-top:1px solid rgba(127,154,163,.35);font-weight:700;font-size:.9em;white-space:normal;overflow-wrap:break-word";
+        // One line; the popup grows to fit it.
+        v.style.cssText = "flex-basis:100%;width:100%;box-sizing:border-box;margin-top:6px;padding-top:5px;" +
+          "border-top:1px solid rgba(127,154,163,.35);font-weight:700;font-size:.9em;white-space:nowrap";
         popup.appendChild(v);
       }
       if (!popup.hasAttribute(POPUP_ATTR)) {
@@ -402,24 +407,12 @@
         // A row popup: let the verdict wrap onto its own line.
         if (getComputedStyle(popup).display.includes("flex")) popup.style.flexWrap = "wrap";
       }
-      let [words, head, sub] = v.children;
-      if (!sub) {
-        v.textContent = "";
-        words = document.createElement("div");
-        words.style.cssText = "font-weight:400;margin-bottom:2px";
-        head = document.createElement("div");
-        sub = document.createElement("div");
-        sub.style.cssText = `font-weight:400;color:${GREY};margin-top:2px;white-space:pre-line`;
-        v.append(words, head, sub);
-      }
-      setWords(words, b);
-      if (head.textContent !== text) head.textContent = text;
-      if (head.style.color !== color) head.style.color = color;
-      const more = detail(b);
-      if (sub.textContent !== more) sub.textContent = more;
-      sub.style.display = more ? "" : "none";
+      setNumber(popup, risk, RISK_WORD[b.riskChange || "no_change"], b.risk);
+      setNumber(popup, loot, LOOT_WORD[b.lootChange || "no_change"], b.loot);
+      if (v.textContent !== text) v.textContent = text;
+      if (v.style.color !== color) v.style.color = color;
       // Kept clear of the hovered option it describes (unless it sits inside one).
-      fit(popup, inside ? null : hovered && hovered.closest(`${OPTIONS_SEL} > *`));
+      fit(popup, inside ? null : hovered && hovered.closest(`${OPTIONS_SEL} > *`), v);
     }
   }
 
@@ -499,6 +492,4 @@
     catch (e) { console.warn("[expeditions helper]", e); }
   }
   window.__cor3.onDom(run);
-  // The time left to decide counts down.
-  window.__cor3.every(1000, run, "expeditions helper");
 })();
