@@ -2,8 +2,9 @@
 // - Makes the game's hover popup on decision options clear: in the game's row the
 //   arrow boxes become the change, coloured the right way round (the game colours
 //   "risk up" green): exact numbers like Risk +15 from the expedition data the game
-//   sends (websocket hook in shared/socket.js), else HIGHER / LOWER / SAME. Under
-//   it one line of decision help, with the mission risk after the choice.
+//   sends (websocket hook in shared/socket.js), else HIGHER / LOWER / SAME.
+// - Under the choice buttons, one line of decision help per choice, with the
+//   mission risk after the choice. The game's popup is never moved or made taller.
 // - Adds the exact risk score (0-100) next to LOW / MODERATE / HIGH.
 // - Shows death and fail chance on the mercenary cards once the game has priced
 //   that mercenary.
@@ -52,7 +53,6 @@
     if (!on) {
       for (const el of document.querySelectorAll(MINE)) el.remove();
       for (const el of document.querySelectorAll("[data-cor3-exp-popup]")) {
-        el.style.flexWrap = el.getAttribute("data-cor3-exp-popup");
         el.removeAttribute("data-cor3-exp-popup");
         restoreFit(el);
         showIcons(el);
@@ -284,22 +284,18 @@
     return null;
   }
 
-  // The game draws its tooltip box as an SVG of a fixed size (InfoTooltipBg), so
-  // our line ran out of it, and the event panel cut off what stuck out. Redraw
-  // the box at the size of its content, then keep the whole tooltip inside the
-  // panel: below the option when it doesn't fit above, else moved down just
-  // enough. Uses the separate "translate" property so the game's own transform
-  // stays as it is. All of it is undone when the popup closes or the helper is off.
+  // The game draws its tooltip box as an SVG of a fixed size (InfoTooltipBg).
+  // Our numbers can make the row a little wider, so the box outline is stretched
+  // to the content. The tooltip itself is never moved or made taller: the help
+  // line sits under the choices instead, where nothing cuts it off or covers a
+  // choice. Undone when the popup closes or the helper is off.
   const FIT = "data-cor3-exp-fit";
-  const FIT_STYLES = ["translate", "minWidth", "height", "maxHeight", "pointerEvents", "zIndex"];
   const tipOf = (popup) => popup.closest('[data-component-name="InfoTooltipPopup"], [role="tooltip"]') || popup;
   const bgOf = (tip) => tip.querySelector('[data-component-name="InfoTooltipBg"] svg');
   function restoreFit(popup) {
-    popup.style.minWidth = "";
     const tip = tipOf(popup);
     if (!tip.hasAttribute(FIT)) return;
     const was = JSON.parse(tip.getAttribute(FIT));
-    for (const k of FIT_STYLES) tip.style[k] = was.style[k] || "";
     const svg = bgOf(tip), path = svg && svg.querySelector("path");
     if (svg && was.svg) {
       for (const [k, v] of Object.entries(was.svg)) v == null ? svg.removeAttribute(k) : svg.setAttribute(k, v);
@@ -322,17 +318,17 @@
       return String(+(isX ? (v > w0 / 2 ? v + dw : v) : (v > h0 / 2 ? v + dh : v)).toFixed(2));
     });
   }
-  function redrawBox(tip, popup) {
+  function redrawBox(popup) {
+    const tip = tipOf(popup);
     const svg = bgOf(tip), path = svg && svg.querySelector("path");
     if (!svg || !path) return;
-    const was = JSON.parse(tip.getAttribute(FIT));
-    if (!was.svg) {
-      was.svg = { width: svg.getAttribute("width"), height: svg.getAttribute("height"), viewBox: svg.getAttribute("viewBox") };
-      was.d = path.getAttribute("d");
-      was.bgW = svg.parentElement.style.width;
-      was.bgH = svg.parentElement.style.height;
-      tip.setAttribute(FIT, JSON.stringify(was));
+    if (!tip.hasAttribute(FIT)) {
+      tip.setAttribute(FIT, JSON.stringify({
+        svg: { width: svg.getAttribute("width"), height: svg.getAttribute("height"), viewBox: svg.getAttribute("viewBox") },
+        d: path.getAttribute("d"), bgW: svg.parentElement.style.width, bgH: svg.parentElement.style.height,
+      }));
     }
+    const was = JSON.parse(tip.getAttribute(FIT));
     const w0 = parseFloat(was.svg.width), h0 = parseFloat(was.svg.height);
     if (!(w0 > 0 && h0 > 0)) return;
     // The content plus the same margin the game left around its own row.
@@ -348,87 +344,13 @@
     svg.parentElement.style.width = `${w}px`;
     svg.parentElement.style.height = `${h}px`;
   }
-  // The part of the screen the popup can show in: the window, cut down by every
-  // parent that hides what overflows it.
-  function visibleArea(el) {
-    const area = { top: 0, left: 0, right: window.innerWidth, bottom: window.innerHeight };
-    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
-      const cs = getComputedStyle(p);
-      if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
-      const r = p.getBoundingClientRect();
-      if (cs.overflowY !== "visible") { area.top = Math.max(area.top, r.top); area.bottom = Math.min(area.bottom, r.bottom); }
-      if (cs.overflowX !== "visible") { area.left = Math.max(area.left, r.left); area.right = Math.min(area.right, r.right); }
-    }
-    return area;
-  }
-  const PAD = 4;
-  // Bounding box of the tooltip, including content that runs past it.
-  function boxOf(tip) {
-    const b = tip.getBoundingClientRect();
-    const svg = bgOf(tip);
-    if (!svg) return b;
-    const s = svg.getBoundingClientRect();
-    const top = Math.min(b.top, s.top), left = Math.min(b.left, s.left);
-    const right = Math.max(b.right, s.right), bottom = Math.max(b.bottom, s.bottom);
-    return { top, left, right, bottom, width: right - left, height: bottom - top };
-  }
-  function fit(popup, anchor, line) {
-    const tip = tipOf(popup);
-    if (!tip.hasAttribute(FIT)) {
-      const style = {};
-      for (const k of FIT_STYLES) style[k] = tip.style[k];
-      tip.setAttribute(FIT, JSON.stringify({ style }));
-      // As tall as its content (the game sizes it for its own row).
-      tip.style.height = "auto";
-      tip.style.maxHeight = "none";
-      tip.style.zIndex = "1000";
-    }
-    // Measure where the game puts it, then move it from there.
-    const was = JSON.parse(tip.getAttribute(FIT)).style;
-    tip.style.translate = "";
-    tip.style.pointerEvents = was.pointerEvents || "";
-    // Wide enough for the help line on one line.
-    popup.style.minWidth = "";
-    const more = line.scrollWidth - line.clientWidth;
-    if (more > 0) popup.style.minWidth = `${popup.offsetWidth + more}px`;
-    redrawBox(tip, popup);
-    const box = boxOf(tip);
-    if (!box.width || !box.height) return;
-    const area = visibleArea(tip);
-    let dx = 0, dy = 0;
-    // Only move what is cut off; then leave a small margin.
-    if (box.right > area.right) dx = area.right - PAD - box.right;
-    if (box.left + dx < area.left) dx = area.left + PAD - box.left;
-    if (box.top < area.top || box.bottom > area.bottom) {
-      const at = anchor && anchor.getBoundingClientRect();
-      const space = at ? Math.max(PAD, at.top - box.bottom) : PAD;
-      const above = at && (box.top + box.bottom) / 2 < at.top;
-      if (above && at.bottom + space + box.height <= area.bottom - PAD) {
-        dy = at.bottom + space - box.top; // flip under the option
-      } else if (at && !above && at.top - space - box.height >= area.top + PAD) {
-        dy = at.top - space - box.bottom; // flip over the option
-      } else {
-        dy = Math.min(area.bottom - PAD - box.bottom, Math.max(0, area.top + PAD - box.top));
-        if (box.top + dy < area.top + PAD) dy = area.top + PAD - box.top;
-      }
-    }
-    if (dx || dy) tip.style.translate = `${Math.round(dx)}px ${Math.round(dy)}px`;
-    // Moved over the option it describes: let the pointer through, so the
-    // option keeps its hover and the popup doesn't flicker.
-    if (dy && anchor && gap(boxOf(tip), anchor.getBoundingClientRect()) === 0) tip.style.pointerEvents = "none";
-  }
 
   function unmark(popup) {
-    const v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
-    if (v) v.remove();
-    if (popup.hasAttribute(POPUP_ATTR)) {
-      popup.style.flexWrap = popup.getAttribute(POPUP_ATTR);
-      popup.removeAttribute(POPUP_ATTR);
-    }
     restoreFit(popup);
     showIcons(popup);
   }
 
+  // The numbers go in the game's own popup row, in place of its arrows.
   function annotatePopups() {
     const nodes = labelNodes(document.body);
     const risks = nodes.filter((n) => /risk/i.test(n.nodeValue));
@@ -456,27 +378,52 @@
     for (const { popup, b: inside, risk, loot } of found) {
       const b = inside || (popup === pick ? fromHover : null);
       if (!b) { unmark(popup); continue; }
-      let v = popup.querySelector(`:scope > .${VERDICT_CLASS}`);
-      const [text, color] = verdict(b);
+      popup.setAttribute(POPUP_ATTR, "");
+      setNumber(popup, risk, RISK_WORD[b.riskChange || "no_change"], b.risk);
+      setNumber(popup, loot, LOOT_WORD[b.lootChange || "no_change"], b.loot);
+      redrawBox(popup);
+    }
+  }
+
+  // One line of decision help per choice, right under the choice buttons, so
+  // you can compare them without hovering and nothing covers a button.
+  const optionLabel = (b, i) => String(b.label ?? b.text ?? b.title ?? b.content ?? `Choice ${i + 1}`).trim();
+  function annotateChoices() {
+    // Lines whose choices are gone (decision made) go too.
+    for (const v of document.querySelectorAll(`.${VERDICT_CLASS}`)) {
+      const prev = v.previousElementSibling;
+      if (!(prev && prev.matches(OPTIONS_SEL))) v.remove();
+    }
+    for (const box of document.querySelectorAll(OPTIONS_SEL)) {
+      const rows = [];
+      Array.from(box.children).forEach((c, i) => {
+        if (c.classList.contains(VERDICT_CLASS)) return;
+        const b = optionOf(c);
+        if (b) rows.push([optionLabel(b, i), ...verdict(b)]);
+      });
+      let v = box.nextElementSibling;
+      if (!(v && v.classList.contains(VERDICT_CLASS))) v = null;
+      if (!rows.length) { if (v) v.remove(); continue; }
       if (!v) {
         v = document.createElement("div");
         v.className = VERDICT_CLASS;
-        // One line; the popup grows to fit it.
-        v.style.cssText = "flex-basis:100%;width:100%;box-sizing:border-box;margin-top:6px;padding-top:5px;" +
-          "border-top:1px solid rgba(127,154,163,.35);font-weight:700;font-size:.9em;white-space:nowrap";
-        popup.appendChild(v);
+        v.style.cssText = "display:grid;grid-template-columns:auto auto;justify-content:end;gap:2px 10px;margin-top:6px;" +
+          "font-size:12px;line-height:1.35;pointer-events:none";
+        box.after(v);
       }
-      if (!popup.hasAttribute(POPUP_ATTR)) {
-        popup.setAttribute(POPUP_ATTR, popup.style.flexWrap || "");
-        // A row popup: let the verdict wrap onto its own line.
-        if (getComputedStyle(popup).display.includes("flex")) popup.style.flexWrap = "wrap";
+      const key = JSON.stringify(rows);
+      if (v.getAttribute("data-key") === key) continue;
+      v.setAttribute("data-key", key);
+      v.textContent = "";
+      for (const [label, text, color] of rows) {
+        const a = document.createElement("span");
+        a.textContent = label;
+        a.style.cssText = `color:${GREY};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:22ch`;
+        const t = document.createElement("span");
+        t.textContent = text;
+        t.style.cssText = `color:${color};font-weight:700`;
+        v.append(a, t);
       }
-      setNumber(popup, risk, RISK_WORD[b.riskChange || "no_change"], b.risk);
-      setNumber(popup, loot, LOOT_WORD[b.lootChange || "no_change"], b.loot);
-      if (v.textContent !== text) v.textContent = text;
-      if (v.style.color !== color) v.style.color = color;
-      // Kept clear of the hovered option it describes (unless it sits inside one).
-      fit(popup, inside ? null : hovered && hovered.closest(`${OPTIONS_SEL} > *`), v);
     }
   }
 
@@ -552,7 +499,7 @@
   // The popup only lives while hovering, so react to page changes, not a timer.
   function run() {
     if (!state.enabled) return;
-    try { annotatePopups(); annotateRiskScore(); annotateMercs(); }
+    try { annotatePopups(); annotateChoices(); annotateRiskScore(); annotateMercs(); }
     catch (e) { console.warn("[expeditions helper]", e); }
   }
   window.__cor3.onDom(run);
