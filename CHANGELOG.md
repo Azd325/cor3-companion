@@ -10,6 +10,8 @@ and uses it as the release notes. Leave out headings that have nothing under the
 
 ## Unreleased
 
+## 1.4.4 (2026-11-26)
+
 ### Fixed
 
 - The expedition choice popup no longer covers a choice or gets cut off by the event panel. The decision help
